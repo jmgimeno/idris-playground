@@ -52,9 +52,13 @@ namespace Exercises1
   data ThreeEq : a -> b -> c -> Type where
     Trio : a = b -> b = c -> ThreeEq a b c
 
+  data ThreeEq' : (num1 : Nat) -> (num2 : Nat) -> (num3 : Nat) -> Type where
+    Trio' : (num1 : Nat) -> ThreeEq' num num num
+
   -- Exercise 4
 
   allSameS : ThreeEq x y z -> ThreeEq (S x) (S y) (S z)
   allSameS (Trio xy yz) = Trio (cong S xy) (cong S yz)
 
-
+  allSameaS' : ThreeEq' x y z -> ThreeEq' (S x) (S y) (S z)
+  allSameaS' (Trio' num) = Trio' (S num)
