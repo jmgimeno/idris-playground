@@ -1,4 +1,4 @@
--- Type-Driven Develoment - Section 8.2
+-- Type-Driven Develoment - Section 8.1
 
 module EqNat
 
