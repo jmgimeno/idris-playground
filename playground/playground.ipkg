@@ -3,4 +3,4 @@ package playground
 depends = base, contrib
 
 modules = BinTrees
-	, Equality
+	, EqNat
