@@ -5,3 +5,5 @@ depends = base, contrib
 modules = BinTrees
 	, EqNat
 	, Vectors
+	, CheckEqDec
+	, DecEqVect
