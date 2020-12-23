@@ -27,6 +27,11 @@ strengthen {n = (S k)} (FS x) = case strengthen x of
                                      Left l => Left (FS l)
                                      Right r => Right (FS r)
 
+-- return the largest element in a Fin
+total
+last : Fin (S n)
+last {n = Z} = FZ
+last {n = (S k)} = FS last
 -}
 
 {-
@@ -70,4 +75,18 @@ total
 add : {n : _} -> Fin n -> Fin n -> Fin n
 add x y = fin_rec inc y x
 
+total
+mul : {n : Nat} -> Fin n -> Fin n -> Fin n
+mul {n = Z} x y impossible
+mul {n = (S k)} x y = fin_rec (add y) FZ x
 
+total
+decr : {n : Nat} -> Fin n -> Fin n
+decr {n = 0} x impossible
+decr {n = (S k)} FZ = last
+decr {n = (S k)} (FS x) = weaken x
+
+total
+inv : {n : Nat} -> Fin n -> Fin n
+inv {n = 0} x impossible
+inv {n = (S k)} x = fin_rec decr FZ x
