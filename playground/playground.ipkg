@@ -8,3 +8,4 @@ modules = BinTrees
 	, CheckEqDec
 	, DecEqVect
 	, RemoveElem
+	, ModularArithmetic
