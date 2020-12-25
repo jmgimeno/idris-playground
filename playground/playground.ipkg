@@ -9,3 +9,4 @@ modules = BinTrees
 	, DecEqVect
 	, RemoveElem
 	, ModularArithmetic
+	, Hangman
