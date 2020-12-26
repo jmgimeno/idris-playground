@@ -10,3 +10,4 @@ modules = BinTrees
 	, RemoveElem
 	, ModularArithmetic
 	, Hangman
+	, DescribeList
