@@ -11,3 +11,4 @@ modules = BinTrees
 	, ModularArithmetic
 	, Hangman
 	, DescribeList
+	, SnocList
