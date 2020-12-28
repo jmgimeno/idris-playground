@@ -12,3 +12,4 @@ modules = BinTrees
 	, Hangman
 	, DescribeList
 	, SnocList
+	, MergeSort
