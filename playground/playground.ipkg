@@ -13,3 +13,4 @@ modules = BinTrees
 	, DescribeList
 	, SnocList
 	, MergeSort
+	, HalfRecView
