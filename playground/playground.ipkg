@@ -14,3 +14,4 @@ modules = BinTrees
 	, SnocList
 	, MergeSort
 	, HalfRecView
+	, SExp

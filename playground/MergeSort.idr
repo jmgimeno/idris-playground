@@ -1,5 +1,6 @@
 -- Type-Driven Development - section 10.2.4
 
+import Control.WellFounded
 import Data.List
 import Data.List.Views
 import Data.List.Views.Extra
@@ -32,6 +33,19 @@ equalSuffix xs ys with (MkPair (snocList xs) (snocList ys))
   equalSuffix (xs ++ [x]) [] | ((Snoc x xs xsrec), Empty) = []
   equalSuffix (xs ++ [x]) (ys ++ [y]) | ((Snoc x xs xsrec), (Snoc y ys ysrec)) 
     = if x == y then (equalsSuffix xs ys | MkPair xsrec ysrec) ++ [x] else []
+
+Sized (SnocList xs) where
+  size Empty = 0
+  size (Snoc x ys rec) = S(size rec)
+
+equalSuffix' : Eq a => List a -> List a -> List a
+equalSuffix' xs ys with (sizeAccessible(MkPair (snocList xs) (snocList ys)))
+  equalSuffix' xs ys | (Access rec) with (MkPair (snocList xs) (snocList ys))
+    equalSuffix' [] ys | (Access rec) | (Empty, y) = []
+    equalSuffix' (xs ++ [x]) [] | (Access rec) | ((Snoc x xs xsrec), Empty) = []
+    equalSuffix' (xs ++ [x]) (ys ++ [y]) | (Access rec) | ((Snoc x xs xsrec), (Snoc y ys ysrec)) 
+      = if x == y then (equalsSuffix'' xs ys | ?access) ++ [x]
+                  else []
 
 -- Exercise 2
 
