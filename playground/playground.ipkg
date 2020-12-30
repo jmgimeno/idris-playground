@@ -16,3 +16,6 @@ modules = BinTrees
 	, HalfRecView
 	, SExp
 	, Gcd
+	, DataStore
+	, TestStore
+	, Shape_abs
