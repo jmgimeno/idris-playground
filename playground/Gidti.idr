@@ -3,6 +3,7 @@
 module Gidti
 
 import Data.Nat
+import Data.Vect
 import Decidable.Equality
 import Syntax.WithProof
 
@@ -138,4 +139,65 @@ namespace Poset
     proofA LTEZero LTEZero = Refl
     proofA (LTESucc x) (LTESucc y) = let IH = proofA x y in rewrite IH in Refl
 
+namespace AllSame
+
+  -- section 5.3
+
+  allSame : Eq a => (xs : Vect n a) -> Bool
+  allSame [] = True
+  allSame (x :: []) = True
+  allSame (x :: (y :: xs)) = x == y && allSame (y :: xs)
+
+  data AllSame : (xs : Vect n a) -> Type where
+    AllSameZero : AllSame []
+    AllSameOne  : (x : _) -> AllSame [x]
+    AllSameMany : Eq a => (x : a) -> (y : a) -> (ys : Vect _ a) -> 
+                          (x == y) = True -> AllSame (y :: xs) -> 
+                          AllSame (x :: y :: xs)
+
+  mkAllSame : Eq a => (xs : Vect n a) -> Maybe (AllSame xs)
+  mkAllSame [] = Just AllSameZero
+  mkAllSame (x :: []) = Just $ AllSameOne x
+  mkAllSame (x :: (y :: xs)) with (@@(x == y))
+    mkAllSame (x :: (y :: xs)) | (MkDPair True x_equal_y) 
+      = case mkAllSame (y :: xs) of
+             Nothing => Nothing
+             (Just y_same_xs) => Just $ AllSameMany x y xs x_equal_y y_same_xs
+    mkAllSame (x :: (y :: xs)) | (MkDPair False not_equal) 
+      = Nothing
+
+  allSame' : Eq a => Vect n a -> Bool
+  allSame' xs = case mkAllSame xs of
+                     Nothing => False
+                     (Just _) => True
+
+namespace Trees
+
+  -- section 5.4
+
+  data Tree a = Leaf | Node (Tree a) a (Tree a)
+
+  depth : Tree a -> Nat  
+  depth Leaf = 0
+  depth (Node l _ r) = 1 + maximum (depth l) (depth r)
+
+  depth_tree_gte_0 : (tr : Tree a) -> GTE (depth tr) 0
+  depth_tree_gte_0 Leaf = LTEZero
+  depth_tree_gte_0 (Node l _ r) = LTEZero
+
+  map_tree : (a -> b) -> Tree a -> Tree b
+  map_tree _ Leaf = Leaf
+  map_tree f (Node l x r) = Node (map_tree f l) (f x) (map_tree f r)
+
+  size_tree : Tree a -> Nat
+  size_tree Leaf = 0
+  size_tree (Node l _ r) = 1 + size_tree l + size_tree r
+
+  proof_1 : (tr : Tree a) -> (f : a -> b) -> size_tree tr = size_tree (map_tree f tr)  
+  proof_1 Leaf f = Refl
+  proof_1 (Node l _ r) f = let ih_l = proof_1 l f in
+                           let ih_r = proof_1 r f in
+                           rewrite ih_l in
+                           rewrite ih_r in
+                           Refl
 
