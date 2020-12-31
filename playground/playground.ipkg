@@ -19,3 +19,4 @@ modules = BinTrees
 	, DataStore
 	, TestStore
 	, Shape_abs
+	, Gidti
