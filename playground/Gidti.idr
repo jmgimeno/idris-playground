@@ -201,3 +201,100 @@ namespace Trees
                            rewrite ih_r in
                            Refl
 
+namespace TypeChecker
+
+  -- appendix A (translated from haskell)
+  
+  public export
+  data Term = T
+            | F
+            | O
+            | IfThenElse Term Term Term
+            | Succ Term
+            | Pred Term
+            | IsZero Term
+            | TVar String
+            | Let String Term Term
+
+  public export
+  data Type' = TBool | TNat
+
+  export
+  Eq Type' where
+    TBool == TBool = True
+    TNat  == TNat  = True
+    _     == _     = False
+
+  export
+  TyEnv : Type
+  TyEnv = List (String, Type') -- Type env
+
+  export
+  TeEnv : Type
+  TeEnv = List (String, Term)  -- Term env
+
+  addType : String -> Type' -> TyEnv -> TyEnv
+  addType v t env = (v, t) :: env
+
+  getTypeFromEnv : TyEnv -> String -> Maybe Type'
+  getTypeFromEnv [] _ = Nothing
+  getTypeFromEnv ((v', t) :: env) v = if v' == v then Just t else getTypeFromEnv env v
+
+  addTerm : String -> Term -> TeEnv -> TeEnv
+  addTerm v t env = (v, t) :: env
+
+  getTermFromEnv : TeEnv -> String -> Maybe Term
+  getTermFromEnv [] _ = Nothing
+  getTermFromEnv ((v', t) :: env) v = if v' == v then Just t else getTermFromEnv env v
+  
+  export
+  eval : TeEnv -> Term -> Either String Term
+  eval _   (IfThenElse T t _) = Right t
+  eval _   (IfThenElse F _ e) = Right e
+  eval env (IfThenElse c t e) = do c' <- eval env c
+                                   pure $ IfThenElse c' t e
+  eval env (Succ t) = do t' <- eval env t
+                         pure $ Succ t'
+  eval _   (Pred O) = Right O
+  eval _   (Pred (Succ k)) = Right k
+  eval env (Pred t) = do t' <- eval env t
+                         pure $ Pred t'
+  eval _   (IsZero O) = Right T
+  eval _   (IsZero (Succ _)) = Right F
+  eval env (IsZero t) = do t' <- eval env t
+                           pure $ IsZero t'
+  eval env (TVar v) = case getTermFromEnv env v of
+                        Just t => Right t
+                        _      => Left "No var found in env" 
+  eval env (Let v t t') = do t'' <- eval env t
+                             eval (addTerm v t'' env) t'
+  eval _ _ = Left "No rule applies"
+
+  export
+  typeOf : TyEnv -> Term -> Either String Type'
+  typeOf _   T = Right TBool
+  typeOf _   F = Right TBool
+  typeOf _   O = Right TNat
+  typeOf env (IfThenElse c t e) 
+    = case typeOf env c of
+        Right TBool => let tt = typeOf env t
+                           te = typeOf env e in
+                         if tt == te then tt
+                                     else Left "Types mismatch"
+        _ => Left "Unsupported type for IfThenElse"
+  typeOf env (Succ k) = case typeOf env k of
+                          Right TNat => Right TNat
+                          _          => Left "Unsupported type for Succ"
+  typeOf env (Pred k) = case typeOf env k of
+                          Right TNat => Right TNat
+                          _          => Left "Unsupported type for Pred"
+  typeOf env (IsZero k) = case typeOf env k of
+                            Right TNat => Right TBool
+                            _          => Left "Unsupported type for IsZero"
+  typeOf env (TVar v) = case getTypeFromEnv env v of
+                          Just t => Right t
+                          _      => Left "No type found in env"
+  typeOf env (Let v t t') = case typeOf env t of
+                              Right t'' => typeOf (addType v t'' env) t'
+                              _         => Left "Unsupported type for Let"                  
+  
