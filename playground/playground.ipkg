@@ -20,3 +20,4 @@ modules = BinTrees
 	, TestStore
 	, Shape_abs
 	, Gidti
+	, VerifiedSum
