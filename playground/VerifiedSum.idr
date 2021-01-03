@@ -2,6 +2,7 @@ module VerifiedSum
 
 import Control.Algebra
 import Data.List
+import Data.Nat
 
 namespace Naturals
 
@@ -12,40 +13,89 @@ namespace Naturals
     SNull : Sum 0 []
     SCons : {s : _} -> Sum s xs -> Sum (x + s) (x :: xs)
 
-  spec : (l : List Nat) -> (s : Nat) -> Sum s l -> s = sum l
-  spec [] 0 SNull = Refl
-  spec (x :: xs) (x + s) (SCons rec) = let ih = spec xs s rec in 
-                                        rewrite sym ih in    
-                                        Refl
-
   thm : Sum s l -> s = sum l
   thm SNull = Refl
   thm (SCons rec) = let ih = thm rec in rewrite ih in Refl
 
-  sumP : (l : List Nat) -> (s : Nat ** Sum s l)
-  sumP [] = (_ ** SNull)
-  sumP (x :: xs) = let (_ ** rec) = sumP xs in (_ ** SCons rec)
+  sumV : (l : List Nat) -> (s : Nat ** Sum s l)
+  sumV [] = (_ ** SNull)
+  sumV (x :: xs) = let (_ ** rec) = sumV xs in (_ ** SCons rec)
 
 namespace Monoid -- thanks to @gallais for the multiple hints
 
-  sumM : Monoid a => List a -> a
-  sumM = foldr (<+>) neutral
+  sum : Monoid a => List a -> a
+  sum = foldr (<+>) neutral
 
-  data SumM : Monoid a -> a -> List a -> Type where
-    SNullM : (mon : Monoid a) => SumM mon (neutral @{mon}) []
-    SConsM : (mon : Monoid a) => SumM mon s xs -> SumM mon (x <+> s) (x :: xs)
+  data Sum : Monoid a -> a -> List a -> Type where
+    SNull : (mon : Monoid a) => Sum mon (neutral @{mon}) []
+    SCons : (mon : Monoid a) => Sum mon s xs -> Sum mon (x <+> s) (x :: xs)
+
+  thm : (mon : Monoid a) => Sum mon s l -> sum @{mon} l = s -- my solution
+  thm SNull = Refl
+  thm (SCons rec) = let ih = thm rec in rewrite ih in Refl
+
+  thm' : (mon : Monoid a) => Sum mon s l -> sum @{mon} l = s -- gallais'
+  thm' SNull = Refl
+  thm' {l = x :: xs} (SCons p) = cong (x <+>) (thm' p)
+  
+  sumV : (mon : Monoid a) -> (l : List a) -> (s : a ** Sum mon s l)
+  sumV mon [] = (_ ** SNull)
+  sumV mon (x :: xs) = let (_ ** rec) = sumV mon xs in (_ ** SCons rec) 
+
+namespace LeftFoldNaturals
+
+  sum' : List Nat -> Nat
+  sum' = foldl (+) 0
+
+  data Sum : (s : Nat) -> (l : List Nat) -> Type where
+    SNull : Sum 0 []
+    SCons : {s : _} -> Sum s xs -> Sum (x + s) (x :: xs)
+
+  lemma : {x, y : _} -> {xs : List Nat} -> x + (foldl (+) y xs) = foldl (+) (x + y) xs
+  lemma {xs = []} = Refl 
+  lemma {xs = z :: zs} = let ih = lemma {x=x} {y=y+z} {xs=zs} in 
+                         rewrite ih in 
+                         rewrite plusAssociative x y z in 
+                         Refl
+
+  thm : Sum s l -> s = sum' l
+  thm SNull = Refl
+  thm {l = x :: xs} (SCons rec) = let ih = thm rec in 
+                                  rewrite ih in  
+                                  rewrite lemma {x=x} {y=0} {xs=xs} in 
+                                  rewrite plusZeroRightNeutral x in 
+                                  Refl
+
+namespace LeftFoldMonoid
+
+  sum' : Monoid a => List a -> a
+  sum' = foldl (<+>) neutral
+
+  data Sum : Monoid a -> a -> List a -> Type where
+    SNull : (mon : Monoid a) => Sum mon (neutral @{mon}) []
+    SCons : (mon : Monoid a) => Sum mon s xs -> Sum mon (x <+> s) (x :: xs)
 
   it : a => a -- reifying a constraint?
   it @{a} = a
   
-  theMonoid : MonoidV a => Monoid a -- In this case I don't need it but it's a neat trick
+  theMonoid : MonoidV a => Monoid a 
   theMonoid = it
 
-  thm : (mon : Monoid a) => SumM mon s l -> sumM @{mon} l = s -- my solution
-  thm SNullM = Refl
-  thm (SConsM rec) = let ih = thm rec in rewrite ih in Refl
+  theSemigroupV : MonoidV a => SemigroupV a
+  theSemigroupV = it
 
-  thm' : (mon : Monoid a) => SumM mon s l -> sumM @{mon} l = s -- gallais'
-  thm' SNullM = Refl
-  thm' {l = x :: xs} (SConsM p) = cong (x <+>) (thm' p)
+  lemma : (mon : MonoidV a) -> {x, y : _} -> {xs : List a} -> x <+> (foldl (<+>) y xs) = foldl (<+>) (x <+> y) xs
+  lemma mon {xs = []} = Refl
+  lemma mon {xs = (z :: zs)} = let ih = lemma mon {x=x} {y=y<+>z} {xs=zs} in 
+                               rewrite ih in    
+                               rewrite semigroupOpIsAssociative @{theSemigroupV} x y z in
+                               Refl
 
+  thm : (mon : MonoidV a) -> {l: _} ->Sum (theMonoid @{mon}) s l -> s = sum' l
+  thm mon SNull = Refl
+  thm mon {l = x :: xs} (SCons rec) = let ih = thm mon rec in
+                                      let lem = lemma mon {x=x} {y=(neutral @{theMonoid})} {xs=xs} in
+                                      rewrite ih in
+                                      --rewrite lem in
+                                      ?foo   
+ 
