@@ -3,6 +3,7 @@ module VerifiedSum
 import Control.Algebra
 import Data.List
 import Data.Nat
+import Syntax.PreorderReasoning
 
 namespace Naturals
 
@@ -96,6 +97,20 @@ namespace LeftFoldMonoid
   thm mon {l = x :: xs} (SCons rec) = let ih = thm mon rec in
                                       let lem = lemma mon {x=x} {y=(neutral @{theMonoid})} {xs=xs} in
                                       rewrite ih in
-                                      --rewrite lem in
+                                      --rewrite lem in -- It seems idris does not use the same <+> in different paths
                                       ?foo   
- 
+
+namespace EquationalReasoning
+
+  data Sum : (0 a : Type) -> a -> (a -> a -> a) -> a -> List a -> Type where
+     SNull : Sum a ne op ne []
+     SCons : Sum a ne op s xs -> Sum a ne op (op x s) (x :: xs)
+  
+  0 thm : MonoidV a => Sum a Prelude.neutral (<+>) s l -> foldl (<+>) acc l = acc <+> s
+  thm {acc} SNull = rewrite monoidNeutralIsNeutralL acc in Refl
+  thm (SCons {s} {xs} {x} rec) = Calc $
+    |~ foldl (<+>) acc (x :: xs)
+    ~~ foldl (<+>) (acc <+> x) xs ...( ?a )
+    ~~ (acc <+> x) <+> s          ...( ?b )
+    ~~ acc <+> (x <+> s)          ...( ?c )
+
