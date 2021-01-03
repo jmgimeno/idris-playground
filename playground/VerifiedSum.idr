@@ -5,6 +5,7 @@ import Data.List
 import Data.Nat
 import Syntax.PreorderReasoning
 
+
 namespace Naturals
 
   sum : List Nat -> Nat
@@ -110,7 +111,7 @@ namespace EquationalReasoning
   thm {acc} SNull = rewrite monoidNeutralIsNeutralL acc in Refl
   thm (SCons {s} {xs} {x} rec) = Calc $
     |~ foldl (<+>) acc (x :: xs)
-    ~~ foldl (<+>) (acc <+> x) xs ...( ?a )
-    ~~ (acc <+> x) <+> s          ...( ?b )
-    ~~ acc <+> (x <+> s)          ...( ?c )
+    ~~ foldl (<+>) (acc <+> x) xs ...( Refl )
+    ~~ (acc <+> x) <+> s          ...( thm rec )
+    ~~ acc <+> (x <+> s)          ...( sym (semigroupOpIsAssociative acc x s) )
 
