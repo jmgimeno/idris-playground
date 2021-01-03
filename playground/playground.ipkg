@@ -21,3 +21,4 @@ modules = BinTrees
 	, Shape_abs
 	, Gidti
 	, VerifiedSum
+	, EquationalReasoning
