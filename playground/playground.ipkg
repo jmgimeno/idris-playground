@@ -22,3 +22,4 @@ modules = BinTrees
 	, Gidti
 	, VerifiedSum
 	, EquationalReasoning
+	, Fibonacci
