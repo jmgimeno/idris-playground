@@ -86,29 +86,4 @@ genFib : Nat -> (a ** b ** Fib' a b)
 genFib 0 = (_ ** _ ** Initial)
 genFib (S k) = let (p ** c ** f) = genFib k in (c ** c + p ** Next f)
 
--- a logaritmic solution
-
-data M : (n : Nat) -> (a, b, c ,d : Nat) -> Type where
-  M0 : M 0 1 0 0 1
-  M1 : M 1 0 1 1 1 
-  MPlus : M k a b c d -> M k' a' b' c' d' -> 
-          M (k + k') (a * a' + b * c') (a * b' + b * d') (c * a' + d * c') (c * b' + d * d')
-
-mat : (n : Nat) -> (a ** b ** c ** d ** M n a b c d)
-mat n with (halfRec n)
-  mat 0 | HalfRecZ = (_ ** _ ** _ ** _ ** M0)
-  mat (k + k) | (HalfRecEven k rec) 
-    = let (_ ** _ ** _ ** _ ** m) = (mat k | rec)
-          m' = MPlus m m in
-        (_ ** _ ** _ ** _ ** m')
-  mat (S (k + k)) | (HalfRecOdd k rec) 
-    = let (_ ** _ ** _ ** _ ** m) = (mat k | rec)
-          m' = MPlus m m
-          m'' = MPlus M1 m' in
-        (_ ** _ ** _ ** _ ** m'')
-
-fibm : (a ** b ** c ** d ** M n a b c d) -> Nat
-fibm (_ ** r ** _ ** _ ** _) = r
-
-thm : (n : Nat) -> Fib n (fibm (mat n))
-thm n = ?thm_rhs
+    
