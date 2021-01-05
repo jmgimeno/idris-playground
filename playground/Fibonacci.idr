@@ -86,4 +86,45 @@ genFib : Nat -> (a ** b ** Fib' a b)
 genFib 0 = (_ ** _ ** Initial)
 genFib (S k) = let (p ** c ** f) = genFib k in (c ** c + p ** Next f)
 
-    
+-- a logaritmic solution
+
+data M : (n : Nat) -> (a, b, c ,d : Nat) -> Type where
+  M0 : M 0 1 0 0 1
+  M1 : M 1 0 1 1 1 
+  MPlus : M k a b c d -> M k' a' b' c' d' -> 
+          M (k + k') (a * a' + b * c') (a * b' + b * d') (c * a' + d * c') (c * b' + d * d')
+
+mat : (n : Nat) -> (a ** b ** c ** d ** M n a b c d)
+mat n with (halfRec n)
+  mat 0 | HalfRecZ = (_ ** _ ** _ ** _ ** M0)
+  mat (k + k) | (HalfRecEven k rec) 
+    = let (_ ** _ ** _ ** _ ** m) = (mat k | rec)
+          m' = MPlus m m in
+        (_ ** _ ** _ ** _ ** m')
+  mat (S (k + k)) | (HalfRecOdd k rec) 
+    = let (_ ** _ ** _ ** _ ** m) = (mat k | rec)
+          m' = MPlus m m
+          m'' = MPlus M1 m' in
+        (_ ** _ ** _ ** _ ** m'')
+
+lemma : (m : M i a b c d) -> (f0 : Fib j r0) -> (f1 : Fib (S j) r1) -> ((r0 ** Fib (i + j) r0), (r1 ** Fib (S (i + j)) r1))
+
+fibl : (k : Nat) -> (m : M i a b c d) -> (f0 : Fib j r0) -> (f1 : Fib (S j) r1) -> k + i = n ->
+       ((r0 ** Fib (k + i + j) r0), (r1 ** Fib (S (k + i + j)) r1))
+fibl k m f0 f1 prf with (halfRec k)
+  fibl 0 m f0 f1 prf | HalfRecZ 
+    = lemma m f0 f1
+  fibl (h + h) m f0 f1 prf | (HalfRecEven h rec) 
+    = let ((r0 ** fr0), (r1 ** fr1)) = lemma m f0 f1
+          ((r2 ** fr2), (r3 ** fr3)) = lemma m fr0 fr1 in
+        ?foo
+  fibl (S (h + h)) m f0 f1 prf | (HalfRecOdd h rec) 
+    = ?op_rhs_3
+
+
+fiblCert : (n : Nat) -> (r : Nat ** Fib n r)
+fiblCert n = let fn = fst $ fibl n M0 Fib0 Fib1 Refl in
+             rewrite sym (plusZeroRightNeutral n) in
+             rewrite sym (plusZeroRightNeutral n) in
+             fn
+             
