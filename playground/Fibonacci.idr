@@ -9,7 +9,7 @@ import Syntax.PreorderReasoning
 -- problem proposed by @sverien
 
 -- Fib n r = r is the fibonacci of n
-
+{-
 data Fib : (0 _ : Nat) -> Nat -> Type where
   Fib0 : Fib 0 0
   Fib1 : Fib 1 1
@@ -17,7 +17,15 @@ data Fib : (0 _ : Nat) -> Nat -> Type where
        -> {r0, r1 : Nat}
        -> (0 _ : Fib n r0) -> (0 _ : Fib (S n) r1)
        -> Fib (S (S n)) (r0 + r1)
-
+       -}
+data Fib : Nat -> Nat -> Type where
+  Fib0 : Fib 0 0
+  Fib1 : Fib 1 1
+  FibN :  {n : Nat}
+       -> {r0, r1 : Nat}
+       -> Fib n r0 -> Fib (S n) r1
+       -> Fib (S (S n)) (r0 + r1)
+ 
 -- recursive implementation
 
 fib : (n : Nat) -> Nat
@@ -171,6 +179,6 @@ mat n with (halfRec n)
 fibl : (n : Nat) -> Nat
 fibl n = let (MkMat _ r _ _ ** _) = mat n in r
 
-fib_step : (step : FibMat j m) -> (f0 : Fib i r0) -> (f1 : Fib (S i) r1) -> 
-           ((r0 ** Fib (i + j) r0), (r1 ** Fib (S(i + j)) r1))
-
+thm : {n, m, a, b, c, d : _} -> FibMat n m -> MkMat a b c d = m -> (Fib n b, Fib (S n) d)
+thm FibMatZ Refl = (Fib0, Fib1)
+thm (FibMatSucc x) prf = ?thm_succ 
