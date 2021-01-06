@@ -1,8 +1,10 @@
 module Fibonacci
 
+import Control.Algebra
 import Data.DPair -- Subset(Element)
 import Data.Nat   -- lemmas
 import Data.Nat.Views
+import Syntax.PreorderReasoning
 
 -- problem proposed by @sverien
 
@@ -88,43 +90,69 @@ genFib (S k) = let (p ** c ** f) = genFib k in (c ** c + p ** Next f)
 
 -- a logaritmic solution
 
-data M : (n : Nat) -> (a, b, c ,d : Nat) -> Type where
-  M0 : M 0 1 0 0 1
-  M1 : M 1 0 1 1 1 
-  MPlus : M k a b c d -> M k' a' b' c' d' -> 
-          M (k + k') (a * a' + b * c') (a * b' + b * d') (c * a' + d * c') (c * b' + d * d')
+data Mat = MkMat Nat Nat Nat Nat
 
-mat : (n : Nat) -> (a ** b ** c ** d ** M n a b c d)
-mat n with (halfRec n)
-  mat 0 | HalfRecZ = (_ ** _ ** _ ** _ ** M0)
-  mat (k + k) | (HalfRecEven k rec) 
-    = let (_ ** _ ** _ ** _ ** m) = (mat k | rec)
-          m' = MPlus m m in
-        (_ ** _ ** _ ** _ ** m')
-  mat (S (k + k)) | (HalfRecOdd k rec) 
-    = let (_ ** _ ** _ ** _ ** m) = (mat k | rec)
-          m' = MPlus m m
-          m'' = MPlus M1 m' in
-        (_ ** _ ** _ ** _ ** m'')
+Semigroup Mat where
+  (MkMat a b c d) <+> (MkMat a' b' c' d')
+    = MkMat (a * a' + b * c') (a * b' + b * d') (c * a' + d * c') (c * b' + d * d')
 
-lemma : (m : M i a b c d) -> (f0 : Fib j r0) -> (f1 : Fib (S j) r1) -> ((r0 ** Fib (i + j) r0), (r1 ** Fib (S (i + j)) r1))
+SemigroupV Mat where
+  -- semigroupOpIsAssociative : (l, c, r : ty) -> l <+> (c <+> r) = (l <+> c) <+> r
+  semigroupOpIsAssociative l c r = ?assoc
+  
+[theMonoid] Monoid Mat where
+  neutral = MkMat 1 0 0 1
 
-fibl : (k : Nat) -> (m : M i a b c d) -> (f0 : Fib j r0) -> (f1 : Fib (S j) r1) -> k + i = n ->
-       ((r0 ** Fib (k + i + j) r0), (r1 ** Fib (S (k + i + j)) r1))
-fibl k m f0 f1 prf with (halfRec k)
-  fibl 0 m f0 f1 prf | HalfRecZ 
-    = lemma m f0 f1
-  fibl (h + h) m f0 f1 prf | (HalfRecEven h rec) 
-    = let ((r0 ** fr0), (r1 ** fr1)) = lemma m f0 f1
-          ((r2 ** fr2), (r3 ** fr3)) = lemma m fr0 fr1 in
-        ?foo
-  fibl (S (h + h)) m f0 f1 prf | (HalfRecOdd h rec) 
-    = ?op_rhs_3
+neutral_lemma1 : (a : Nat) -> (b : Nat) -> a * 1 + b * 0 = a
+neutral_lemma1 a b = Calc $
+  |~ a * 1 + b * 0
+  ~~ a + b * 0     ... ( cong (+(b * 0)) $ multOneRightNeutral a )
+  ~~ a + 0         ... ( cong (a+) $ multZeroRightZero b )
+  ~~ a             ... ( plusZeroRightNeutral a )
 
+neutral_lemma2 : (a : Nat) -> (b : Nat) -> a * 0 + b * 1 = b
+neutral_lemma2 a b = Calc $
+  |~ a * 0 + b * 1
+  ~~ b * 1 + a * 0 ... ( plusCommutative (a * 0) (b * 1) ) 
+  ~~ b             ... ( neutral_lemma1 b a ) 
 
-fiblCert : (n : Nat) -> (r : Nat ** Fib n r)
-fiblCert n = let fn = fst $ fibl n M0 Fib0 Fib1 Refl in
-             rewrite sym (plusZeroRightNeutral n) in
-             rewrite sym (plusZeroRightNeutral n) in
-             fn
-             
+MonoidV Mat using theMonoid where
+  monoidNeutralIsNeutralL (MkMat a b c d) 
+    = rewrite neutral_lemma1 a b in
+      rewrite neutral_lemma2 a b in
+      rewrite neutral_lemma1 c d in
+      rewrite neutral_lemma2 c d in
+      Refl 
+    
+  monoidNeutralIsNeutralR (MkMat a b c d) 
+    = rewrite plusZeroRightNeutral a in
+      rewrite plusZeroRightNeutral a in
+      rewrite plusZeroRightNeutral b in
+      rewrite plusZeroRightNeutral b in
+      rewrite plusZeroRightNeutral c in
+      rewrite plusZeroRightNeutral d in       
+      Refl
+
+identity_mat_r : (m : Mat) -> (MkMat 1 0 0 1) <+> m = m
+identity_mat_r (MkMat a b c d) 
+  = rewrite plusZeroRightNeutral a in
+    rewrite plusZeroRightNeutral a in
+    rewrite plusZeroRightNeutral b in
+    rewrite plusZeroRightNeutral b in
+    rewrite plusZeroRightNeutral c in
+    rewrite plusZeroRightNeutral d in       
+    Refl
+
+data FibMat : (n : Nat) -> (m : Mat) -> Type where
+  FibNatZ : FibMat Z (MkMat 1 0 0 1) 
+  FibNatSucc : FibMat k m -> FibMat (S k) ((MkMat 0 1 1 1) <+> m)
+
+(<*>) : FibMat i mi -> FibMat j mj -> FibMat (i + j) (mi <+> mj)
+(<*>) FibNatZ y 
+  = rewrite identity_mat_r mj in 
+    y 
+(<*>) (FibNatSucc {m} x) y 
+  = let xy = x <*> y in 
+    let sxy = FibNatSucc xy in 
+    rewrite sym $ semigroupOpIsAssociative (MkMat 0 1 1 1) m mj in
+    sxy
