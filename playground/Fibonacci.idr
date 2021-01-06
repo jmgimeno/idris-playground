@@ -144,15 +144,33 @@ identity_mat_r (MkMat a b c d)
     Refl
 
 data FibMat : (n : Nat) -> (m : Mat) -> Type where
-  FibNatZ : FibMat Z (MkMat 1 0 0 1) 
-  FibNatSucc : FibMat k m -> FibMat (S k) ((MkMat 0 1 1 1) <+> m)
+  FibMatZ : FibMat Z (MkMat 1 0 0 1) 
+  FibMatSucc : FibMat k m -> FibMat (S k) ((MkMat 0 1 1 1) <+> m)
 
 (<*>) : FibMat i mi -> FibMat j mj -> FibMat (i + j) (mi <+> mj)
-(<*>) FibNatZ y 
+(<*>) FibMatZ y 
   = rewrite identity_mat_r mj in 
     y 
-(<*>) (FibNatSucc {m} x) y 
+(<*>) (FibMatSucc {m} x) y 
   = let xy = x <*> y in 
-    let sxy = FibNatSucc xy in 
+    let sxy = FibMatSucc xy in 
     rewrite sym $ semigroupOpIsAssociative (MkMat 0 1 1 1) m mj in
     sxy
+
+mat : (n : Nat) -> (m : Mat ** FibMat n m)
+mat n with (halfRec n)
+  mat 0 | HalfRecZ 
+    = MkDPair (MkMat 1 0 0 1) FibMatZ
+  mat (plus k k) | (HalfRecEven k rec) 
+    = let (_ ** fk) = (mat k | rec) in 
+      (_ ** fk <*> fk)
+  mat (S (k + k)) | (HalfRecOdd k rec) 
+    = let (_ ** fk) = (mat k | rec) in
+      (_ ** FibMatSucc (fk <*> fk))
+
+fibl : (n : Nat) -> Nat
+fibl n = let (MkMat _ r _ _ ** _) = mat n in r
+
+fib_step : (step : FibMat j m) -> (f0 : Fib i r0) -> (f1 : Fib (S i) r1) -> 
+           ((r0 ** Fib (i + j) r0), (r1 ** Fib (S(i + j)) r1))
+
