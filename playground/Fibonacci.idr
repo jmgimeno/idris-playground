@@ -179,6 +179,14 @@ mat n with (halfRec n)
 fibl : (n : Nat) -> Nat
 fibl n = let (MkMat _ r _ _ ** _) = mat n in r
 
-thm : {n, m, a, b, c, d : _} -> FibMat n m -> MkMat a b c d = m -> (Fib n b, Fib (S n) d)
-thm FibMatZ Refl = (Fib0, Fib1)
-thm (FibMatSucc x) prf = ?thm_succ 
+lemma : {a, b, c, d : _} -> m = MkMat a b c d -> (x ** z ** (MkMat 0 1 1 1) <+> m = MkMat x d z (b + d))
+lemma Refl = rewrite plusZeroRightNeutral b in
+             rewrite plusZeroRightNeutral d in
+             (_ ** _ ** Refl)
+
+thm : (n : Nat) -> (a ** b ** c ** d ** m ** (Fib n b, Fib (S n) d, FibMat n m, m = MkMat a b c d)) 
+thm 0 = (_ ** _ ** _ ** _ ** _ ** (Fib0, Fib1, FibMatZ, Refl))
+thm (S k) 
+  = let (a' ** b' ** c' ** d' ** m' ** (fk', fsk', mn', prf')) = thm k in
+    let (_ ** _ ** prf) = lemma prf' in
+    (_ ** _ ** _ ** _ ** _ ** (fsk', FibN fk' fsk', FibMatSucc mn', prf))
