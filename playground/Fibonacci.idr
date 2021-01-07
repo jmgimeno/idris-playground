@@ -141,23 +141,13 @@ MonoidV Mat using theMonoid where
       rewrite plusZeroRightNeutral d in       
       Refl
 
-identity_mat_r : (m : Mat) -> (MkMat 1 0 0 1) <+> m = m
-identity_mat_r (MkMat a b c d) 
-  = rewrite plusZeroRightNeutral a in
-    rewrite plusZeroRightNeutral a in
-    rewrite plusZeroRightNeutral b in
-    rewrite plusZeroRightNeutral b in
-    rewrite plusZeroRightNeutral c in
-    rewrite plusZeroRightNeutral d in       
-    Refl
-
 data FibMat : (n : Nat) -> (m : Mat) -> Type where
-  FibMatZ : FibMat Z (MkMat 1 0 0 1) 
+  FibMatZ : FibMat Z (let z = neutral in z) 
   FibMatSucc : FibMat k m -> FibMat (S k) ((MkMat 0 1 1 1) <+> m)
 
 (<*>) : FibMat i mi -> FibMat j mj -> FibMat (i + j) (mi <+> mj)
 (<*>) FibMatZ y 
-  = rewrite identity_mat_r mj in 
+  = rewrite monoidNeutralIsNeutralR mj in 
     y 
 (<*>) (FibMatSucc {m} x) y 
   = let xy = x <*> y in 
@@ -187,6 +177,6 @@ lemma Refl = rewrite plusZeroRightNeutral b in
 thm : (n : Nat) -> (a ** b ** c ** d ** m ** (Fib n b, Fib (S n) d, FibMat n m, m = MkMat a b c d)) 
 thm 0 = (_ ** _ ** _ ** _ ** _ ** (Fib0, Fib1, FibMatZ, Refl))
 thm (S k) 
-  = let (a' ** b' ** c' ** d' ** m' ** (fk', fsk', mn', prf')) = thm k in
+  = let (_ ** _ ** _ ** _ ** _ ** (fk', fsk', mn', prf')) = thm k in
     let (_ ** _ ** prf) = lemma prf' in
     (_ ** _ ** _ ** _ ** _ ** (fsk', FibN fk' fsk', FibMatSucc mn', prf))
