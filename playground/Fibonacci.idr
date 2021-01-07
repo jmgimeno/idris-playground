@@ -108,7 +108,7 @@ SemigroupV Mat where
   -- semigroupOpIsAssociative : (l, c, r : ty) -> l <+> (c <+> r) = (l <+> c) <+> r
   semigroupOpIsAssociative l c r = ?assoc
   
-[theMonoid] Monoid Mat where
+Monoid Mat where
   neutral = MkMat 1 0 0 1
 
 neutral_lemma1 : (a : Nat) -> (b : Nat) -> a * 1 + b * 0 = a
@@ -124,7 +124,7 @@ neutral_lemma2 a b = Calc $
   ~~ b * 1 + a * 0 ... ( plusCommutative (a * 0) (b * 1) ) 
   ~~ b             ... ( neutral_lemma1 b a ) 
 
-MonoidV Mat using theMonoid where
+MonoidV Mat where
   monoidNeutralIsNeutralL (MkMat a b c d) 
     = rewrite neutral_lemma1 a b in
       rewrite neutral_lemma2 a b in
@@ -174,9 +174,14 @@ lemma Refl = rewrite plusZeroRightNeutral b in
              rewrite plusZeroRightNeutral d in
              (_ ** _ ** Refl)
 
-thm : (n : Nat) -> (a ** b ** c ** d ** m ** (Fib n b, Fib (S n) d, FibMat n m, m = MkMat a b c d)) 
-thm 0 = (_ ** _ ** _ ** _ ** _ ** (Fib0, Fib1, FibMatZ, Refl))
-thm (S k) 
-  = let (_ ** _ ** _ ** _ ** _ ** (fk', fsk', mn', prf')) = thm k in
-    let (_ ** _ ** prf) = lemma prf' in
-    (_ ** _ ** _ ** _ ** _ ** (fsk', FibN fk' fsk', FibMatSucc mn', prf))
+thm : {n : _ } -> FibMat n m -> (a ** b **c ** d ** (Fib n b, Fib (S n) d, m = MkMat a b c d))
+thm FibMatZ = (_ ** _ ** _ ** _ ** (Fib0, Fib1, Refl))
+thm (FibMatSucc x) = let (_ ** _ ** _ ** _ ** (fk', fsk', prf')) = thm x in 
+                      let (_ ** _ ** prf) = lemma prf' in
+                      (_ ** _ ** _ ** _ ** (fsk', FibN fk' fsk', prf))
+
+fiblCert : (n : Nat) -> (r : Nat ** Fib n r)
+fiblCert n = let (_ ** r ** _ ** _ ** (f, _, _)) = thm $ snd $ mat n in
+                (r ** f)
+
+
