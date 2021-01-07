@@ -87,3 +87,11 @@ genFib 0 = (_ ** _ ** Initial)
 genFib (S k) = let (p ** c ** f) = genFib k in (c ** c + p ** Next f)
 
     
+-- a simpler solution from @Jake
+
+fibJ : (n : Nat) -> (k ** Fib n k)
+fibJ 0 = (0 ** Fib0)
+fibJ (S 0) = (1 ** Fib1)
+fibJ (S (S j)) = case fibJ (S j) of
+                  (1 ** Fib1) => (1 ** FibN Fib0 Fib1)
+                  (k + j ** (FibN x y)) => (j + (k + j) ** FibN y (FibN x y))
