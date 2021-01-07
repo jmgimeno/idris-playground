@@ -7,23 +7,14 @@ import Data.Nat.Views
 import Syntax.PreorderReasoning
 
 -- problem proposed by @sverien
-
 -- Fib n r = r is the fibonacci of n
-{-
+
 data Fib : (0 _ : Nat) -> Nat -> Type where
   Fib0 : Fib 0 0
   Fib1 : Fib 1 1
   FibN :  {0 n : Nat}
        -> {r0, r1 : Nat}
        -> (0 _ : Fib n r0) -> (0 _ : Fib (S n) r1)
-       -> Fib (S (S n)) (r0 + r1)
-       -}
-data Fib : Nat -> Nat -> Type where
-  Fib0 : Fib 0 0
-  Fib1 : Fib 1 1
-  FibN :  {n : Nat}
-       -> {r0, r1 : Nat}
-       -> Fib n r0 -> Fib (S n) r1
        -> Fib (S (S n)) (r0 + r1)
  
 -- recursive implementation
@@ -108,7 +99,9 @@ fibJ (S (S j)) = case fibJ (S j) of
 -- For more fibonacci proofs:
 -- https://github.com/idris-lang/Idris2/blob/master/libs/contrib/Data/Nat/Fib.idr
 
--- a logaritmic solution
+-- a version with matrices aimed to a logarithmic solution
+-- it is not because the FibMat matrices are defined step-by-step via succ
+-- TODO: can define fib to be the element at matriz (0, 1) and do it logarithmically
 
 data Mat = MkMat Nat Nat Nat Nat
 
@@ -189,8 +182,8 @@ lemma Refl = rewrite plusZeroRightNeutral b in
 thm : {n : _ } -> FibMat n m -> (a ** b **c ** d ** (Fib n b, Fib (S n) d, m = MkMat a b c d))
 thm FibMatZ = (_ ** _ ** _ ** _ ** (Fib0, Fib1, Refl))
 thm (FibMatSucc x) = let (_ ** _ ** _ ** _ ** (fk', fsk', prf')) = thm x in 
-                      let (_ ** _ ** prf) = lemma prf' in
-                      (_ ** _ ** _ ** _ ** (fsk', FibN fk' fsk', prf))
+                     let (_ ** _ ** prf) = lemma prf' in
+                     (_ ** _ ** _ ** _ ** (fsk', FibN fk' fsk', prf))
 
 fiblCert : (n : Nat) -> (r : Nat ** Fib n r)
 fiblCert n = let (_ ** r ** _ ** _ ** (f, _, _)) = thm $ snd $ mat n in
