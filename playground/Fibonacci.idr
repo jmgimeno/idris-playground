@@ -107,7 +107,7 @@ Semigroup Mat where
   (MkMat a b c d) <+> (MkMat a' b' c' d')
     = MkMat (a * a' + b * c') (a * b' + b * d') (c * a' + d * c') (c * b' + d * d')
 
--- TODO: Prove associativity (but it ios not needed for this demonstration)
+-- TODO: Prove associativity (but it is not needed for this proof)
 
 SemigroupV Mat where
   semigroupOpIsAssociative l c r = ?assoc
