@@ -100,8 +100,6 @@ fibJ (S (S j)) = case fibJ (S j) of
 -- https://github.com/idris-lang/Idris2/blob/master/libs/contrib/Data/Nat/Fib.idr
 
 -- a version with matrices aimed to a logarithmic solution
--- it is not because the FibMat matrices are defined step-by-step via succ
--- TODO: can define fib to be the element at matriz (0, 1) and do it logarithmically
 
 data Mat = MkMat Nat Nat Nat Nat
 
@@ -109,8 +107,9 @@ Semigroup Mat where
   (MkMat a b c d) <+> (MkMat a' b' c' d')
     = MkMat (a * a' + b * c') (a * b' + b * d') (c * a' + d * c') (c * b' + d * d')
 
+-- TODO: Prove associativity (but it ios not needed for this demonstration)
+
 SemigroupV Mat where
-  -- semigroupOpIsAssociative : (l, c, r : ty) -> l <+> (c <+> r) = (l <+> c) <+> r
   semigroupOpIsAssociative l c r = ?assoc
   
 Monoid Mat where
@@ -146,47 +145,43 @@ MonoidV Mat where
       rewrite plusZeroRightNeutral d in       
       Refl
 
-data FibMat : (n : Nat) -> (m : Mat) -> Type where
-  FibMatZ : FibMat Z (let z = neutral in z) 
-  FibMatSucc : FibMat k m -> FibMat (S k) ((MkMat 0 1 1 1) <+> m)
+data Exp : (m : Mat) -> (n : Nat) -> (r : Mat) -> Type where
+  ExpZ    : Exp m Z (MkMat 1 0 0 1) 
+  ExpEven : Exp m k r -> Exp m (k + k) (r <+> r)
+  ExpOdd  : Exp m k r -> Exp m (S (k + k)) (m <+> (r <+> r))
 
-(<*>) : FibMat i mi -> FibMat j mj -> FibMat (i + j) (mi <+> mj)
-(<*>) FibMatZ y 
-  = rewrite monoidNeutralIsNeutralR mj in 
-    y 
-(<*>) (FibMatSucc {m} x) y 
-  = let xy = x <*> y in 
-    let sxy = FibMatSucc xy in 
-    rewrite sym $ semigroupOpIsAssociative (MkMat 0 1 1 1) m mj in
-    sxy
+exp : (m : Mat) -> (n : Nat) -> (r ** Exp m n r)
+exp m n with (halfRec n)
+  exp m 0 | HalfRecZ 
+    = MkDPair (MkMat 1 0 0 1) ExpZ
+  exp m (plus k k) | (HalfRecEven k rec) 
+    = let (_ ** rk) = (exp m k | rec) in 
+          (_ ** ExpEven rk)
+  exp m (S (k + k)) | (HalfRecOdd k rec) 
+    = let (_ ** rk) = (exp m k | rec) in
+          (_ ** ExpOdd rk)
 
-mat : (n : Nat) -> (m : Mat ** FibMat n m)
-mat n with (halfRec n)
-  mat 0 | HalfRecZ 
-    = MkDPair (MkMat 1 0 0 1) FibMatZ
-  mat (plus k k) | (HalfRecEven k rec) 
-    = let (_ ** fk) = (mat k | rec) in 
-      (_ ** fk <*> fk)
-  mat (S (k + k)) | (HalfRecOdd k rec) 
-    = let (_ ** fk) = (mat k | rec) in
-      (_ ** FibMatSucc (fk <*> fk))
+step_exp : Exp m k r -> Exp m (S k) (m <+> r)
+step_exp ExpZ        = ExpOdd ExpZ 
+step_exp (ExpEven x) = ExpOdd x 
+step_exp (ExpOdd x)  = step_exp $ ExpOdd x
 
-fibl : (n : Nat) -> Nat
-fibl n = let (MkMat _ r _ _ ** _) = mat n in r
+FibExp : (n : Nat) -> (r : Mat) -> Type
+FibExp = Exp (MkMat 1 0 1 1)
 
-lemma : {a, b, c, d : _} -> m = MkMat a b c d -> (x ** z ** (MkMat 0 1 1 1) <+> m = MkMat x d z (b + d))
-lemma Refl = rewrite plusZeroRightNeutral b in
-             rewrite plusZeroRightNeutral d in
-             (_ ** _ ** Refl)
+step_fib : {a, b, c, d : _} -> MkMat a b c d = m -> (x ** z ** (MkMat 0 1 1 1) <+> m = MkMat x d z (b + d))
+step_fib Refl = rewrite plusZeroRightNeutral b in
+                rewrite plusZeroRightNeutral d in 
+                (_ ** _ ** Refl)                
 
-thm : {n : _ } -> FibMat n m -> (a ** b **c ** d ** (Fib n b, Fib (S n) d, m = MkMat a b c d))
-thm FibMatZ = (_ ** _ ** _ ** _ ** (Fib0, Fib1, Refl))
-thm (FibMatSucc x) = let (_ ** _ ** _ ** _ ** (fk', fsk', prf')) = thm x in 
-                     let (_ ** _ ** prf) = lemma prf' in
-                     (_ ** _ ** _ ** _ ** (fsk', FibN fk' fsk', prf))
+fib_lemma : (n : Nat) -> (a ** b ** c ** d ** m ** (FibExp n m, MkMat a b c d = m, Fib n b, Fib (S n) d))
+fib_lemma 0 
+  = (_ ** _ ** _ ** _ ** _ ** (ExpZ, Refl, Fib0, Fib1))
+fib_lemma (S k) 
+  = let (_ ** _ ** _ ** _ ** m' ** (fe', eq', f0', f1')) = fib_lemma k in
+    let (_ ** _ ** eq) = step_fib eq' in
+    (_ ** _ ** _ ** _ ** _** (step_exp fe', ?foo, f1', FibN f0' f1'))
 
-fiblCert : (n : Nat) -> (r : Nat ** Fib n r)
-fiblCert n = let (_ ** r ** _ ** _ ** (f, _, _)) = thm $ snd $ mat n in
-                (r ** f)
-
+fiblCert : (n : Nat) -> (r ** Fib n r)
+fiblCert n = let (_ ** b ** _ ** _ ** _ ** (_, _, prf, _)) = fib_lemma n in (b ** prf)
 
