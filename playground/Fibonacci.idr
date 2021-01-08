@@ -9,6 +9,8 @@ import Syntax.PreorderReasoning
 -- problem proposed by @sverien
 -- Fib n r = r is the fibonacci of n
 
+-- TODO Use Int instead of Nat for the result
+
 data Fib : (0 _ : Nat) -> Nat -> Type where
   Fib0 : Fib 0 0
   Fib1 : Fib 1 1
@@ -67,7 +69,9 @@ fibcCert' n = fst calc
     calc = rewrite (sym (plusZeroRightNeutral n)) in loop 0 n Fib0 Fib1
 
 {-
--- a pain to work with (due to minus) and needs k <= n TODO?
+-- a pain to work with (due to minus) and needs k <= n 
+
+-- TODO It can be interesting to work with it
 
 loop' : {n : _ } -> (k : Nat) -> {f0 : _} -> 
         Fib (n `minus` k) f0 -> {f1 : _} -> Fib (S (n `minus` k)) f1 -> (r ** Fib n r) 
@@ -107,7 +111,7 @@ Semigroup Mat where
   (MkMat a b c d) <+> (MkMat a' b' c' d')
     = MkMat (a * a' + b * c') (a * b' + b * d') (c * a' + d * c') (c * b' + d * d')
 
--- TODO: Prove associativity (but it ios not needed for this demonstration)
+-- TODO: Prove associativity (but it is not needed yet)
 
 SemigroupV Mat where
   semigroupOpIsAssociative l c r = ?assoc
@@ -153,7 +157,7 @@ data Exp : (m : Mat) -> (n : Nat) -> (r : Mat) -> Type where
 exp : (m : Mat) -> (n : Nat) -> (r ** Exp m n r)
 exp m n with (halfRec n)
   exp m 0 | HalfRecZ 
-    = MkDPair (MkMat 1 0 0 1) ExpZ
+    = MkDPair (let z = neutral in z) ExpZ
   exp m (plus k k) | (HalfRecEven k rec) 
     = let (_ ** rk) = (exp m k | rec) in 
           (_ ** ExpEven rk)
@@ -161,27 +165,36 @@ exp m n with (halfRec n)
     = let (_ ** rk) = (exp m k | rec) in
           (_ ** ExpOdd rk)
 
+FibExp : (n : Nat) -> (r : Mat) -> Type
+FibExp = Exp (MkMat 0 1 1 1)
+
+-- We can compute the fibonacci via exp (If we accept it being the (0,1) element is enough) :
+
+fiblCert' : (n : Nat) -> (r **  FibExp n r)
+fiblCert' = exp (MkMat 0 1 1 1) 
+
+-- I can link the matrix and the fibbonacci but via existentials 
+
 step_exp : Exp m k r -> Exp m (S k) (m <+> r)
 step_exp ExpZ        = ExpOdd ExpZ 
 step_exp (ExpEven x) = ExpOdd x 
 step_exp (ExpOdd x)  = step_exp $ ExpOdd x
 
-FibExp : (n : Nat) -> (r : Mat) -> Type
-FibExp = Exp (MkMat 1 0 1 1)
+step_fib : {a, b, c, d : _} -> m = MkMat a b c d -> (MkMat 0 1 1 1) <+> m = MkMat c d (a + c) (b + d)
+step_fib Refl = rewrite plusZeroRightNeutral a in
+                rewrite plusZeroRightNeutral b in
+                rewrite plusZeroRightNeutral c in
+                rewrite plusZeroRightNeutral d in
+                Refl
 
-step_fib : {a, b, c, d : _} -> MkMat a b c d = m -> (x ** z ** (MkMat 0 1 1 1) <+> m = MkMat x d z (b + d))
-step_fib Refl = rewrite plusZeroRightNeutral b in
-                rewrite plusZeroRightNeutral d in 
-                (_ ** _ ** Refl)                
-
-fib_lemma : (n : Nat) -> (a ** b ** c ** d ** m ** (FibExp n m, MkMat a b c d = m, Fib n b, Fib (S n) d))
+fib_lemma : (n : Nat) -> (a ** b ** c ** d ** m ** (FibExp n m, m = MkMat a b c d, Fib n b, Fib (S n) d))
 fib_lemma 0 
   = (_ ** _ ** _ ** _ ** _ ** (ExpZ, Refl, Fib0, Fib1))
 fib_lemma (S k) 
-  = let (_ ** _ ** _ ** _ ** m' ** (fe', eq', f0', f1')) = fib_lemma k in
-    let (_ ** _ ** eq) = step_fib eq' in
-    (_ ** _ ** _ ** _ ** _** (step_exp fe', ?foo, f1', FibN f0' f1'))
+  = let (_ ** _ ** _ ** _ ** _ ** (fe', eq', f0', f1')) = fib_lemma k in 
+    (_ ** _ ** _ ** _ ** _ ** (step_exp fe', step_fib eq', f1', FibN f0' f1'))
 
-fiblCert : (n : Nat) -> (r ** Fib n r)
-fiblCert n = let (_ ** b ** _ ** _ ** _ ** (_, _, prf, _)) = fib_lemma n in (b ** prf)
+-- but I cannot link the log version that computes FibExp with the fib_lemma that links FibExp and Fib :-(
+
+-- TODO TO BE CONTINUED ....
 
