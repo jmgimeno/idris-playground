@@ -122,8 +122,8 @@ Monoid Mat where
 neutral_lemma1 : (a : Nat) -> (b : Nat) -> a * 1 + b * 0 = a
 neutral_lemma1 a b = Calc $
   |~ a * 1 + b * 0
-  ~~ a + b * 0     ... ( cong (+(b * 0)) $ multOneRightNeutral a )
-  ~~ a + 0         ... ( cong (a+) $ multZeroRightZero b )
+  ~~ a + b * 0     ... ( cong (+ (b * 0)) $ multOneRightNeutral a )
+  ~~ a + 0         ... ( cong (a +) $ multZeroRightZero b )
   ~~ a             ... ( plusZeroRightNeutral a )
 
 neutral_lemma2 : (a : Nat) -> (b : Nat) -> a * 0 + b * 1 = b
@@ -168,33 +168,58 @@ exp m n with (halfRec n)
 FibExp : (n : Nat) -> (r : Mat) -> Type
 FibExp = Exp (MkMat 0 1 1 1)
 
--- We can compute the fibonacci via exp (If we accept it being the (0,1) element is enough) :
+-- We can compute the fibonacci via exp and we certify it by the property of the FibExp matrix
 
-fiblCert' : (n : Nat) -> (r **  FibExp n r)
-fiblCert' = exp (MkMat 0 1 1 1) 
+fiblCert : (n : Nat) -> (r **  FibExp n r)
+fiblCert = exp (MkMat 0 1 1 1) 
 
--- I can link the matrix and the fibbonacci but via existentials 
+-- I can link one step at a time Exp
 
 step_exp : Exp m k r -> Exp m (S k) (m <+> r)
 step_exp ExpZ        = ExpOdd ExpZ 
 step_exp (ExpEven x) = ExpOdd x 
 step_exp (ExpOdd x)  = step_exp $ ExpOdd x
 
-step_fib : {a, b, c, d : _} -> m = MkMat a b c d -> (MkMat 0 1 1 1) <+> m = MkMat c d (a + c) (b + d)
-step_fib Refl = rewrite plusZeroRightNeutral a in
-                rewrite plusZeroRightNeutral b in
-                rewrite plusZeroRightNeutral c in
-                rewrite plusZeroRightNeutral d in
-                Refl
+-- I can link FibExp and Fib via existentials
 
-fib_lemma : (n : Nat) -> (a ** b ** c ** d ** m ** (FibExp n m, m = MkMat a b c d, Fib n b, Fib (S n) d))
+step_fib : FibExp n (MkMat a b b c) -> FibExp (S n) (MkMat b c c (b + c))
+step_fib ExpZ = ExpOdd ExpZ
+
+fib_lemma : (n : Nat) -> 
+            (a ** b ** c ** (FibExp (S n) (MkMat a b b c), 
+                             Fib n a, Fib (S n) b, Fib (S (S n)) c))
 fib_lemma 0 
-  = (_ ** _ ** _ ** _ ** _ ** (ExpZ, Refl, Fib0, Fib1))
+  = (_ ** _ ** _ ** (ExpOdd ExpZ, Fib0, Fib1, FibN Fib0 Fib1))
 fib_lemma (S k) 
-  = let (_ ** _ ** _ ** _ ** _ ** (fe', eq', f0', f1')) = fib_lemma k in 
-    (_ ** _ ** _ ** _ ** _ ** (step_exp fe', step_fib eq', f1', FibN f0' f1'))
+  = let (a ** b ** c ** (fe, f, f1, f2)) = fib_lemma k in 
+        (_ ** _ ** _ ** (step_fib fe, f1, f2, FibN f1 f2))
+    
+-- FibExp acts as a  "proof template" that transforms a pair of proofs of consecutive Fibs
+-- into a pair of proofs n-steps ahead
 
--- but I cannot link the log version that computes FibExp with the fib_lemma that links FibExp and Fib :-(
+fibexp_lemma : {a, b : _} -> FibExp n m -> Fib i a -> Fib (S i) b -> 
+               (r0 ** r1 ** (Fib (i + n) r0, Fib (S (i + n)) r1))
+fibexp_lemma ExpZ f0 f1 
+  = rewrite plusZeroRightNeutral i in 
+            (_ ** _ ** (f0, f1))
+fibexp_lemma (ExpEven {k} x) f0 f1 
+  = let (_ ** _ ** (f2, f3)) = fibexp_lemma x f0 f1
+        (_ ** _ ** (f4, f5)) = fibexp_lemma x f2 f3 in
+        rewrite plusAssociative i k k in
+        (_ ** _ ** (f4, f5))
+fibexp_lemma (ExpOdd {k} x) f0 f1 
+  = let (_ ** _ ** (f2, f3)) = fibexp_lemma x f0 f1
+        (_ ** _ ** (f4, f5)) = fibexp_lemma x f2 f3 in
+        rewrite sym $ plusSuccRightSucc i (k + k) in 
+        rewrite plusAssociative i k k in 
+        (_ ** _ ** (f5, FibN f4 f5))
+
+-- Does this work? 
+
+fiblCert' : (n : Nat) -> (r ** Fib n r)
+fiblCert' n = let (_ ** fe) = exp (MkMat 0 1 1 1) n
+                  (r ** _ ** (f, _)) = fibexp_lemma fe Fib0 Fib1 in
+                  (r ** f)
 
 -- TODO TO BE CONTINUED ....
 
