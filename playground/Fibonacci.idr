@@ -111,10 +111,45 @@ Semigroup Mat where
   (MkMat a b c d) <+> (MkMat a' b' c' d')
     = MkMat (a * a' + b * c') (a * b' + b * d') (c * a' + d * c') (c * b' + d * d')
 
--- TODO: Prove associativity (but it is not needed yet)
+-- thanks to @OhanKammar for the hints on the structure using equational reasoning
+
+lemma_assoc : (a, b, c, d, e, f, g, h : Nat) ->
+  a * (b * c + d * e) + f * (g * c + h * e) = (a * b + f * g) * c + (a * d + f * h) * e
+lemma_assoc a b c d e f g h = 
+  let lemma1 : {x,y,z,u,v : Nat} -> x * (y * z + u * v) = ((x * y) * z) + ((x * u) * v)
+      lemma1 {x} {y} {z} {u} {v} = Calc $
+       |~ x * (y * z + u * v)
+       ~~ (x * (y * z)) + (x * (u * v)) ...( multDistributesOverPlusRight _ _ _ )
+       ~~ ((x * y) * z) + ((x * u) * v) ...( cong2 (+) (multAssociative _ _ _)
+                                                       (multAssociative _ _ _) )
+
+      lemma2 : {x,y,z,w : Nat} -> (x + y) + (z + w) = (x + z) + (y + w)
+      lemma2 {x} {y} {z} {w} = Calc $
+       |~ (x + y) + (z + w)
+       ~~ ((x + y) + z) + w  ...( plusAssociative _ _ _ )
+       ~~ (x + (y + z)) + w  ...( cong2 (+) (sym $ plusAssociative _ _ _) Refl )
+       ~~ (x + (z + y)) + w  ...( cong2 (+) (cong2 (+) Refl (plusCommutative _ _)) Refl )
+       ~~ ((x + z) + y) + w  ...( cong2 (+) (plusAssociative _ _ _) Refl )   
+       ~~ (x + z) + (y + w)  ...( sym $ plusAssociative _ _ _ ) 
+      
+      lemma3 : {x,y,z,u,v : Nat} -> (y * z + u * v) * x = ((y * z) * x) + ((u * v) * x)
+      lemma3 {x} {y} {z} {u} {v} = Calc $
+        |~ (y * z + u * v) * x 
+        ~~ (y * z) * x + (u * v) * x ...( multDistributesOverPlusLeft _ _ _ )
+
+  in Calc $
+  |~ a * (b * c + d * e) + f * (g * c + h * e)
+  ~~ ((a * b) * c + (a * d) * e) + ((f * g) * c + (f * h) * e) ...( cong2 (+) lemma1 lemma1 )
+  ~~ ((a * b) * c + (f * g) * c) + ((a * d) * e + (f * h) * e) ...( lemma2 )
+  ~~ (a * b + f * g) * c + (a * d + f * h) * e                 ...( sym $ cong2 (+) lemma3 lemma3 ) 
 
 SemigroupV Mat where
-  semigroupOpIsAssociative l c r = ?assoc
+  semigroupOpIsAssociative (MkMat al bl cl dl) (MkMat ac bc cc dc) (MkMat ar br cr dr) 
+  = rewrite lemma_assoc al ac ar bc cr bl cc dc in  
+    rewrite lemma_assoc al ac br bc dr bl cc dc in          
+    rewrite lemma_assoc cl ac ar bc cr dl cc dc in   
+    rewrite lemma_assoc cl ac br bc dr dl cc dc in 
+    Refl
   
 Monoid Mat where
   neutral = MkMat 1 0 0 1
@@ -122,15 +157,15 @@ Monoid Mat where
 neutral_lemma1 : (a : Nat) -> (b : Nat) -> a * 1 + b * 0 = a
 neutral_lemma1 a b = Calc $
   |~ a * 1 + b * 0
-  ~~ a + b * 0     ... ( cong (+ (b * 0)) $ multOneRightNeutral a )
-  ~~ a + 0         ... ( cong (a +) $ multZeroRightZero b )
-  ~~ a             ... ( plusZeroRightNeutral a )
+  ~~ a + b * 0     ... ( cong2 (+) (multOneRightNeutral _) Refl )
+  ~~ a + 0         ... ( cong2 (+) Refl (multZeroRightZero _) )
+  ~~ a             ... ( plusZeroRightNeutral _ )
 
 neutral_lemma2 : (a : Nat) -> (b : Nat) -> a * 0 + b * 1 = b
 neutral_lemma2 a b = Calc $
   |~ a * 0 + b * 1
-  ~~ b * 1 + a * 0 ... ( plusCommutative (a * 0) (b * 1) ) 
-  ~~ b             ... ( neutral_lemma1 b a ) 
+  ~~ b * 1 + a * 0 ... ( plusCommutative _ _ ) 
+  ~~ b             ... ( neutral_lemma1 _ _ ) 
 
 MonoidV Mat where
   monoidNeutralIsNeutralL (MkMat a b c d) 
@@ -170,8 +205,8 @@ FibExp = Exp (MkMat 0 1 1 1)
 
 -- We can compute the fibonacci via exp and we certify it by the property of the FibExp matrix
 
-fiblCert : (n : Nat) -> (r **  FibExp n r)
-fiblCert = exp (MkMat 0 1 1 1) 
+fibexpCert : (n : Nat) -> (r **  FibExp n r)
+fibexpCert = exp (MkMat 0 1 1 1) 
 
 -- I can link one step at a time Exp
 
@@ -214,7 +249,7 @@ fibexp_lemma (ExpOdd {k} x) f0 f1
         rewrite plusAssociative i k k in 
         (_ ** _ ** (f5, FibN f4 f5))
 
--- Does this work? 
+-- And finally:
 
 fiblCert' : (n : Nat) -> (r ** Fib n r)
 fiblCert' n = let (_ ** fe) = exp (MkMat 0 1 1 1) n
