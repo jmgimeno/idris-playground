@@ -173,32 +173,27 @@ peas how_many_peas = ind_Nat how_many_peas mot_peas Nil step_peas
 also_rec_Nat : {ty : Type} -> (target : Nat) -> (base : ty) -> (step : Nat -> ty -> ty) -> ty
 also_rec_Nat target base step = ind_Nat target (\_ => ty) base step
 
-data mot_last : (ty : Type) -> (k : Nat) -> Type where
-  MotLast : (Vect (S k) ty -> ty) -> mot_last ty k
-
-elim_MotLast : mot_last ty k -> Vect (S k) ty -> ty
-elim_MotLast (MotLast f) = f
+mot_last : (ty : Type) -> (k : Nat) -> Type
+mot_last ty k = Vect (S k) ty -> ty
 
 base_last : (es : Vect (S 0) ty) -> ty
 base_last es = head es
 
-step_last : (l_1 : Nat) -> mot_last ty l_1 -> mot_last ty (S l_1)
-step_last l_1 (MotLast last_l_1) = MotLast $ \es => last_l_1 (tail es)
+step_last : (l_1 : Nat) -> (last_l_1 : mot_last ty l_1) -> mot_last ty (S l_1)
+step_last l_1 last_l_1 = \es => last_l_1 (tail es)
 
 last' : {l : Nat} -> {ty : Type} -> Vect (S l) ty -> ty
-last' = elim_MotLast $ ind_Nat l (mot_last ty) (MotLast base_last) step_last 
+last' = ind_Nat l (mot_last ty) base_last step_last 
 
-data mot_drop_last : (ty : Type) -> (k : Nat) -> Type where
-  MotDropLast : (Vect (S k) ty -> Vect k ty) -> mot_drop_last ty k
-
-elim_MotDropLast : mot_drop_last ty k -> Vect (S k) ty -> Vect k ty
-elim_MotDropLast (MotDropLast f) = f
+mot_drop_last : (ty : Type) -> (k : Nat) -> Type
+mot_drop_last ty k = Vect (S k) ty -> Vect k ty
 
 base_drop_last : (es : Vect (S 0) ty) -> Vect 0 ty
 base_drop_last es = Nil
 
-step_drop_last : (l_1 : Nat) -> mot_drop_last ty l_1 -> mot_drop_last ty (S l_1)
-step_drop_last l_1 (MotDropLast drop_last_l_1) = MotDropLast $ \es => head es :: drop_last_l_1 (tail es) 
+step_drop_last : (l_1 : Nat) -> (drop_last_l_1 : mot_drop_last ty l_1) -> mot_drop_last ty (S l_1)
+step_drop_last l_1 drop_last_l_1 = \es => head es :: drop_last_l_1 (tail es) 
 
 drop_last : {l : Nat} -> {ty : Type} -> Vect (S l) ty -> Vect l ty
-drop_last = elim_MotDropLast $ ind_Nat l (mot_drop_last ty) (MotDropLast base_drop_last) step_drop_last
+drop_last = ind_Nat l (mot_drop_last ty) base_drop_last step_drop_last
+
