@@ -1,6 +1,8 @@
 
 module TheLittleTyper
 
+import Data.Vect
+
 -- Chapter 2
 
 which_nat : (target : Nat) -> (base : ty) -> (step : Nat -> ty) -> ty  
@@ -134,5 +136,19 @@ reverse' es = rec_List es Nil step_reverse
 
 kartoffelmad : List Atom
 kartoffelmad = append (concat' condiments toppings) (reverse' ("plate" :: "rye-bread" :: Nil))
+
+-- Chapter 6
+
+first_of_one : (es : Vect 1 ty) -> ty
+first_of_one es = head es
+
+first_of_two : (es : Vect 2 ty) -> ty
+first_of_two es = head es
+
+first : (es : Vect (S l) ty) -> ty
+first es = head es
+
+rest : (es : Vect (S l) ty) -> Vect l ty
+rest es = tail es
 
 
