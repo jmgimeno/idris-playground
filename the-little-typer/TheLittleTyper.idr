@@ -90,4 +90,49 @@ twin_Atom x = MkPair x x
 twin : (x : y) -> Pair y y
 twin x = MkPair x x
 
+-- Chapter 5
+
+rugbrod : List Atom
+rugbrod = "rye-flour" :: "rye-kernels" :: "water" :: "sourdough" :: "salt" :: Nil
+
+toppings : List Atom
+toppings = "potato" :: "butter" :: Nil
+
+condiments : List Atom
+condiments = "chives" :: "mayonnaise" :: Nil
+
+rec_List : (target : List ty) -> (base : x) -> (step : ty -> List ty -> x -> x) -> x
+rec_List [] base step = base
+rec_List (e :: es) base step = step e es $ rec_List es base step
+
+step_length : (e : ty) -> (es : List ty) -> (length_es : Nat) -> Nat
+step_length _ _ length_es = S length_es
+
+length' : (es : List ty) -> Nat
+length' es = rec_List es 0 step_length
+
+step_append : (e : ty) -> (es : List ty) -> (append_es : List ty) -> List ty
+step_append e _ append_es = e :: append_es
+
+append : (start : List ty) -> (end : List ty) -> List ty
+append start end = rec_List start end step_append
+
+snoc : (start : List ty) -> (e : ty) -> List ty
+snoc start e = rec_List start (e :: Nil) step_append
+
+step_concat : (e : ty) -> (es : List ty) -> (concat_es : List ty) -> List ty
+step_concat e _ concat_es = snoc concat_es e
+
+concat' : (start : List ty) -> (end : List ty) -> List ty
+concat' start end = rec_List end start step_concat
+
+step_reverse : (e : ty) -> (es : List ty) -> (reverse_es : List ty) -> List ty
+step_reverse e _ reverse_es = snoc reverse_es e
+
+reverse' : (es : List ty) -> List ty
+reverse' es = rec_List es Nil step_reverse
+
+kartoffelmad : List Atom
+kartoffelmad = append (concat' condiments toppings) (reverse' ("plate" :: "rye-bread" :: Nil))
+
 
