@@ -5,9 +5,9 @@ import Data.Vect
 
 -- Chapter 2
 
-which_nat : (target : Nat) -> (base : ty) -> (step : Nat -> ty) -> ty  
-which_nat 0     base step = base
-which_nat (S n) base step = step n 
+which_Nat : (target : Nat) -> (base : ty) -> (step : Nat -> ty) -> ty  
+which_Nat 0     base step = base
+which_Nat (S n) base step = step n 
 
 --gauss : (n : Nat) -> Nat
 --gauss n = which_nat n 0 (\ n_1 => S n_1 + gauss n_1)
@@ -31,37 +31,37 @@ pairwise_plus anjou bosc
 
 -- Chapter 3
 
-iter_nat : (target : Nat) -> (base : ty) -> (step : ty -> ty) -> ty
-iter_nat 0     base step = base
-iter_nat (S n) base step = step $ iter_nat n base step
+iter_Nat : (target : Nat) -> (base : ty) -> (step : ty -> ty) -> ty
+iter_Nat 0     base step = base
+iter_Nat (S n) base step = step $ iter_Nat n base step
 
 step_plus : (plus_n_1 : Nat) -> Nat
 step_plus plus_n_1 = S plus_n_1
 
 plus' : (n : Nat) -> (j : Nat) -> Nat
-plus' n j = iter_nat n j step_plus
+plus' n j = iter_Nat n j step_plus
 
-rec_nat : (target : Nat) -> (base : ty) -> (step : Nat -> ty -> ty) -> ty
-rec_nat 0     base step = base
-rec_nat (S n) base step = step n $ rec_nat n base step
+rec_Nat : (target : Nat) -> (base : ty) -> (step : Nat -> ty -> ty) -> ty
+rec_Nat 0     base step = base
+rec_Nat (S n) base step = step n $ rec_Nat n base step
 
 step_zerop : (n_1 : Nat) -> (zerop_n_1 : Bool) -> Bool
 step_zerop _ _ = False
 
 zerop : (n : Nat) -> Bool
-zerop n = rec_nat n True step_zerop
+zerop n = rec_Nat n True step_zerop
 
 step_gauss : (n_1 : Nat) -> (gauss_n_1 : Nat) -> Nat 
 step_gauss n_1 gauss_n_1 = S n_1 `plus'` gauss_n_1
 
 gauss : (n : Nat) -> Nat
-gauss n = rec_nat n 0 step_gauss
+gauss n = rec_Nat n 0 step_gauss
 
 make_step_mult : (j : Nat) -> (n_1 : Nat) -> (mult_n_1 : Nat) -> Nat
 make_step_mult j _ mult_n_1 = j `plus'` mult_n_1
 
 mult' : (n : Nat) -> (j : Nat) -> Nat
-mult' n j = rec_nat n 0 (make_step_mult j)
+mult' n j = rec_Nat n 0 (make_step_mult j)
 
 -- Chapter 4
 
@@ -196,4 +196,27 @@ step_drop_last l_1 drop_last_l_1 = \es => head es :: drop_last_l_1 (tail es)
 
 drop_last : {l : Nat} -> {ty : Type} -> Vect (S l) ty -> Vect l ty
 drop_last = ind_Nat l (mot_drop_last ty) base_drop_last step_drop_last
+
+-- Chapter 8
+
+incr : (n : Nat) -> Nat
+incr n = iter_Nat n 1 (plus' 1)
+
+plus_1_eq_add1 : (n : Nat) -> plus' 1 n = S n
+plus_1_eq_add1 n = Refl
+
+mot_incr_eq_add1 : (k : Nat) -> Type
+mot_incr_eq_add1 k = incr k = S k
+
+base_incr_eq_add1 : incr 0 = S 0
+base_incr_eq_add1 = Refl
+
+step_incr_eq_add1 : (n_1 : Nat) -> 
+                    (incr_eq_add1_n_1 : mot_incr_eq_add1 n_1) -> 
+                    mot_incr_eq_add1 (S n_1)
+step_incr_eq_add1 n_1 incr_eq_add1_n_1 = cong (plus' 1) incr_eq_add1_n_1 -- or S
+
+incr_eq_add1 : (n : Nat) -> incr n = S n
+incr_eq_add1 n = ind_Nat n mot_incr_eq_add1 base_incr_eq_add1 step_incr_eq_add1
+
 
