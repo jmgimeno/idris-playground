@@ -219,4 +219,74 @@ step_incr_eq_add1 n_1 incr_eq_add1_n_1 = cong (plus' 1) incr_eq_add1_n_1 -- or S
 incr_eq_add1 : (n : Nat) -> incr n = S n
 incr_eq_add1 n = ind_Nat n mot_incr_eq_add1 base_incr_eq_add1 step_incr_eq_add1
 
+-- Chapter 9
+
+mot_step_incr_eq_add1' : (n_1 : Nat) -> (k : Nat) -> Type
+mot_step_incr_eq_add1' n_1 k = S (incr n_1) = S k
+
+step_incr_eq_add1' : (n_1 : Nat) -> 
+                     (incr_eq_add1_n_1 : mot_incr_eq_add1 n_1) -> 
+                     mot_incr_eq_add1 (S n_1)
+step_incr_eq_add1' n_1 incr_eq_add1_n_1 
+  = replace {p = mot_step_incr_eq_add1' n_1} incr_eq_add1_n_1 Refl 
+
+double : (n : Nat) -> Nat
+double n = iter_Nat n 0 (plus' 2)
+
+twice : (n : Nat) -> Nat
+twice n = n `plus'` n
+
+mot_add1_plus_eq_plus_add1 : (j : Nat) -> (k : Nat) -> Type
+mot_add1_plus_eq_plus_add1 j k = S (k `plus'` j) = k `plus'` S j
+
+step_add1_plus_eq_plus_add1 : (j : Nat) -> 
+                              (n_1 : Nat) -> 
+                              (add1_plus_eq_plus_add1_n_1 : mot_add1_plus_eq_plus_add1 j n_1) ->
+                              mot_add1_plus_eq_plus_add1 j (S n_1)
+step_add1_plus_eq_plus_add1 j n_1 add1_plus_eq_plus_add1_n_1 
+  = cong S add1_plus_eq_plus_add1_n_1
+
+add1_plus_eq_plus_add1 : (n : Nat) -> (j : Nat) -> S (n `plus'` j) = n `plus'` S j
+add1_plus_eq_plus_add1 n j = ind_Nat n 
+                                    (mot_add1_plus_eq_plus_add1 j) 
+                                    Refl 
+                                    (step_add1_plus_eq_plus_add1 j)
+
+mot_twice_eq_double : (k : Nat) -> Type
+mot_twice_eq_double k = twice k = double k
+
+mot_step_twice_eq_double : (n_1 : Nat) -> (k : Nat) -> Type
+mot_step_twice_eq_double n_1 k = S k = S (S (double n_1))
+
+step_twice_eq_double : (n_1 : Nat) ->
+                       (twice_eq_double_n_1 : mot_twice_eq_double n_1) ->
+                       mot_twice_eq_double (S n_1)
+step_twice_eq_double n_1 twice_eq_double_n_1 
+  = replace {p = mot_step_twice_eq_double n_1} 
+            (add1_plus_eq_plus_add1 n_1 n_1)
+            (cong (plus' 2) twice_eq_double_n_1)
+
+twice_eq_double : (n : Nat) -> twice n = double n
+twice_eq_double n = ind_Nat n mot_twice_eq_double Refl step_twice_eq_double
+
+mot_double_Vec : (ty : Type) -> (k : Nat) -> Type
+mot_double_Vec ty k = Vect k ty -> Vect (double k) ty
+
+base_double_Vec : (es : Vect 0 ty) -> Vect (double 0) ty
+base_double_Vec _ = Nil
+
+step_double_Vec : (l_1 : Nat) -> 
+                  (double_Vect_l_1 : mot_double_Vec ty l_1) ->
+                  mot_double_Vec ty (S l_1)
+step_double_Vec _ double_Vect_l_1 es 
+  = head es :: head es :: double_Vect_l_1 (tail es)
+
+double_Vec : {l : Nat} -> {ty : Type} -> (es : Vect l ty) -> Vect (double l) ty
+double_Vec = ind_Nat l (mot_double_Vec ty) base_double_Vec step_double_Vec
+
+twice_Vec : {ty: Type} -> {l : Nat} -> (es : Vect l ty) -> Vect (twice l) ty
+twice_Vec es = replace {p = \k => Vect k ty}
+                       (sym $ twice_eq_double l)
+                       (double_Vec es)
+
 
