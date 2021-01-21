@@ -289,4 +289,94 @@ twice_Vec es = replace {p = \k => Vect k ty}
                        (sym $ twice_eq_double l)
                        (double_Vec es)
 
+-- Chapter 10
+
+more_expectations : Vect 3 Atom
+more_expectations = "need-induction" :: "Understood-induction" :: "built-function" :: Nil
+
+frame_10_8 : (bread : Atom ** bread = "bagel")
+frame_10_8 = ("bagel" ** Refl {x = "bagel"})
+
+frame_10_11 : (food : Atom ** the (List Atom) [food] = ["toast"])
+frame_10_11 = ("toast" ** Refl)
+
+frame_10_13 : (l : Nat ** Vect l Atom)
+frame_10_13 = (17 ** peas 17)
+
+frame_10_19 : (es : List Atom ** es = reverse' es)
+frame_10_19 = (Nil ** Refl)
+
+frame_10_20 : (es : List Atom ** es = reverse' es)
+frame_10_20 = (["bialy", "schmear", "bialy"] ** Refl)
+
+frame_10_21 : (es : List Atom ** snoc es "grape" = "grape" :: es)
+frame_10_21 = (Nil ** Refl)
+
+frame_10_23 : (es : List Atom ** snoc es "grape" = "grape" :: es)
+frame_10_23 = (["grape", "grape", "grape"] ** Refl)
+
+step_list_to_vec_no : (e: ty) -> 
+                      (es : List ty) -> 
+                      (list_to_vec_es : (l ** Vect l ty)) -> 
+                      (l ** Vect l ty)
+step_list_to_vec_no e _ list_to_vec_es 
+  = (S (fst list_to_vec_es) ** e :: snd list_to_vec_es)
+
+list_to_vec_no1 : (es : List ty) -> (l ** Vect l ty)
+list_to_vec_no1 es = rec_List es (0 ** Nil) step_list_to_vec_no
+
+list_to_vec_no2 : (es : List ty) -> (l ** Vect l ty)
+list_to_vec_no2 _ = (0 ** Nil)
+
+mot_replicate : (ty : Type) -> (k : Nat) -> Type
+mot_replicate ty k = Vect k ty
+
+step_replicate : (e : ty) -> 
+                 (l_1 : Nat) -> 
+                 (step_replicate_l_1 : mot_replicate ty l_1) -> 
+                 mot_replicate ty (S l_1)
+step_replicate e _ step_replicate_l_1 = e :: step_replicate_l_1
+
+replicate' : {ty: Type} -> (l : Nat) -> (e : ty) -> Vect l ty
+replicate' l e = ind_Nat l (mot_replicate ty) Nil (step_replicate e)
+
+copy_52_times : {ty : Type} ->
+                (e : ty) -> 
+                (es : List ty) -> 
+                (copy_52_times_es : (l ** Vect l ty)) -> 
+                (l ** Vect l ty) 
+copy_52_times e _ _ = (52 ** replicate' 52 e)
+
+list_to_vec_no3 : {ty : Type} -> (es : List ty) -> (l ** Vect l ty)
+list_to_vec_no3 es = rec_List es (0 ** Nil) copy_52_times 
+
+ind_List : (target : List ty) ->
+           (mot : List ty -> Type) ->
+           (base : mot Nil) ->
+           (step : (e : ty) -> (es : List ty) -> mot es -> mot (e :: es)) ->
+           mot target
+ind_List []        mot base step = base
+ind_List (e :: es) mot base step = step e es $ ind_List es mot base step
+
+mot_list_to_vec : (ty: Type) -> (es : List ty) -> Type
+mot_list_to_vec ty es = Vect (length' es) ty
+
+step_list_to_vec : (e : ty) -> 
+                   (es : List ty) -> 
+                   (list_to_vec_es : mot_list_to_vec ty es) -> 
+                   mot_list_to_vec ty (e :: es)
+step_list_to_vec e _ list_to_vec_es = e :: list_to_vec_es
+
+list_to_vec : {ty : Type} -> (es : List ty) -> Vect (length' es) ty
+list_to_vec es = ind_List es (mot_list_to_vec ty) Nil step_list_to_vec
+
+step_list_to_vec_no4 : {ty : Type} ->
+                       (e : ty) -> 
+                       (es : List ty) -> 
+                       (list_to_vec_es : mot_list_to_vec ty es) -> 
+                       mot_list_to_vec ty (e :: es)
+step_list_to_vec_no4 e es _ = replicate' (length' (e :: es)) e
+
+list_to_vec_no4 : {ty : Type} -> (es : List ty) -> Vect (length' es) ty
+list_to_vec_no4 es = ind_List es (mot_list_to_vec ty) Nil step_list_to_vec_no4
 
