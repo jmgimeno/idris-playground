@@ -367,8 +367,8 @@ step_list_to_vec : (e : ty) ->
                    mot_list_to_vec ty (e :: es)
 step_list_to_vec e _ list_to_vec_es = e :: list_to_vec_es
 
-list_to_vec : {ty : Type} -> (es : List ty) -> Vect (length' es) ty
-list_to_vec es = ind_List es (mot_list_to_vec ty) Nil step_list_to_vec
+list_to_vec : (ty : Type) -> (es : List ty) -> Vect (length' es) ty
+list_to_vec ty es = ind_List es (mot_list_to_vec ty) Nil step_list_to_vec
 
 step_list_to_vec_no4 : {ty : Type} ->
                        (e : ty) -> 
@@ -379,4 +379,73 @@ step_list_to_vec_no4 e es _ = replicate' (length' (e :: es)) e
 
 list_to_vec_no4 : {ty : Type} -> (es : List ty) -> Vect (length' es) ty
 list_to_vec_no4 es = ind_List es (mot_list_to_vec ty) Nil step_list_to_vec_no4
+
+-- Chapter 11
+
+treats : Vect 3 Atom
+treats = "kanelbullar" :: "plättar" :: "prinsesstärta" :: Nil
+
+drinks : List Atom
+drinks = "coffe" :: "cocoa" :: Nil
+
+ind_Vec : (n : Nat) ->
+          (target : Vect n ty) ->
+          (mot : (k : Nat) -> (es : Vect k ty) -> Type) ->
+          (base : mot 0 Nil) ->
+          (step : (k : Nat) -> (h : ty) -> (t : Vect k ty) -> mot k t -> mot (S k) (h :: t)) ->
+          mot n target
+ind_Vec 0     []       mot base step = base
+ind_Vec (S k) (h :: t) mot base step = step k h t $ ind_Vec k t mot base step
+
+mot_vec_append : (ty : Type) -> (j : Nat) -> (k : Nat) -> (es : Vect k ty) -> Type
+mot_vec_append ty j k _ = Vect (k + j) ty
+
+step_vec_append : (ty : Type) -> 
+                  (j : Nat) -> 
+                  (l_1 : Nat) -> 
+                  (e : ty) -> 
+                  (es : Vect l_1 ty) ->
+                  (vec_append_es : mot_vec_append ty j l_1 es) ->
+                  mot_vec_append ty j (S l_1) (e :: es)
+step_vec_append _ _ _ e _ vec_append_es = e :: vec_append_es
+
+vec_append : (ty : Type) -> (l : Nat) -> (j : Nat) -> Vect l ty -> Vect j ty -> Vect (l + j) ty
+vec_append ty l j es end = ind_Vec l es (mot_vec_append ty j) end (step_vec_append ty j)
+
+fika : Vect 5 Atom
+fika = vec_append Atom 3 2 treats (list_to_vec Atom drinks)
+
+mot_vec_to_list : (ty : Type) -> (l : Nat) -> (es : Vect l ty) -> Type
+mot_vec_to_list ty _ _ = List ty
+
+step_vec_to_list : (ty : Type) ->
+                   (l_1 : Nat) ->
+                   (e : ty) ->
+                   (es : Vect l_1 ty) ->
+                   (vec_to_list_es : mot_vec_to_list ty l_1 es) ->
+                   mot_vec_to_list ty (S l_1) (e :: es)
+step_vec_to_list _ _ e _ vec_to_list_es = e :: vec_to_list_es
+
+vec_to_list : (ty : Type) -> (l : Nat) -> (es : Vect l ty) -> List ty
+vec_to_list ty l es = ind_Vec l es (mot_vec_to_list ty) Nil (step_vec_to_list ty)
+
+mot_list_to_vec_to_list_equal : (ty : Type) -> (es : List ty) -> Type
+mot_list_to_vec_to_list_equal ty es = es = vec_to_list ty (length' es) (list_to_vec ty es)
+
+step_list_to_vec_to_list_equal : (ty : Type) ->
+                                 (e : ty) -> 
+                                 (es : List ty) ->
+                                 (list_to_vec_to_list_equal_es : mot_list_to_vec_to_list_equal ty es) ->
+                                 mot_list_to_vec_to_list_equal ty (e :: es)
+step_list_to_vec_to_list_equal _ e _ list_to_vec_to_list_equal_es = cong (e ::) list_to_vec_to_list_equal_es
+ 
+
+list_to_vec_to_list_equal : (ty : Type) -> 
+                            (es : List ty) -> 
+                            es = vec_to_list ty (length' es) (list_to_vec ty es)
+list_to_vec_to_list_equal ty es = ind_List es
+                                           (mot_list_to_vec_to_list_equal ty)
+                                           Refl
+                                           (step_list_to_vec_to_list_equal ty)
+
 
