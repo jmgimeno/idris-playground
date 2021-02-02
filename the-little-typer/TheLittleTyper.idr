@@ -448,4 +448,41 @@ list_to_vec_to_list_equal ty es = ind_List es
                                            Refl
                                            (step_list_to_vec_to_list_equal ty)
 
+-- Chapter 12
+
+Even : (n : Nat) -> Type
+Even n = (half : Nat ** n = double half)
+
+even_10 : Even 10
+even_10 = (5 ** Refl {x = 10})
+
+zero_is_even : Even 0
+zero_is_even = (0 ** Refl {x = 0})
+
+plus_two_even : (n : Nat) -> Even n -> Even (plus' 2 n)
+plus_two_even _ e_n = (S (fst e_n) ** cong (plus' 2) (snd e_n))
+
+two_is_even : Even 2
+two_is_even = plus_two_even 0 zero_is_even
+
+Odd : (n : Nat) -> Type
+Odd n = (haf : Nat ** n = S (double haf))
+
+one_is_odd : Odd 1
+one_is_odd = (0 ** Refl {x = 1})
+
+thirteen_is_odd : Odd 13
+thirteen_is_odd = (6 ** Refl {x = 13})
+
+add1_even_is_odd : (n : Nat) -> (e_n : Even n) -> Odd (S n)
+add1_even_is_odd _ e_n = (fst e_n ** cong (plus' 1) (snd e_n))
+
+add1_odd_is_even : (n : Nat) -> (o_n : Odd n) -> Even (S n)
+add1_odd_is_even _ o_n = (S (fst o_n) ** cong (plus' 1) (snd o_n))
+
+repeat : (f : Nat -> Nat) -> (n : Nat) -> Nat
+repeat f n = iter_Nat n (f 1) (\iter_f_n_1 => f iter_f_n_1)
+
+ackermann : (n : Nat) -> Nat -> Nat
+ackermann n = iter_Nat n (plus' 1) (\ackerman_n_1 => repeat ackerman_n_1)
 
