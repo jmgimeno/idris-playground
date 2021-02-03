@@ -486,3 +486,31 @@ repeat f n = iter_Nat n (f 1) (\iter_f_n_1 => f iter_f_n_1)
 ackermann : (n : Nat) -> Nat -> Nat
 ackermann n = iter_Nat n (plus' 1) (\ackerman_n_1 => repeat ackerman_n_1)
 
+-- Chapter 13
+
+ind_Either : (target : Either l r) -> 
+             (mot : Either l r -> Type) -> 
+             (base_left : (x : l) -> mot (Left x)) ->
+             (base_right : (x : r) -> mot (Right x)) ->
+             mot target
+ind_Either (Left x)  _ base_left _          = base_left  x
+ind_Either (Right x) _ _         base_right = base_right x
+
+mot_even_or_odd : (k : Nat) -> Type
+mot_even_or_odd k = Either (Even k) (Odd k)
+
+step_even_or_odd : (n_1 : Nat) -> 
+                   (even_or_odd_n_1 : mot_even_or_odd n_1) -> 
+                   mot_even_or_odd (S n_1)
+step_even_or_odd n_1 even_or_odd_n_1 = ind_Either even_or_odd_n_1
+                                                  (\_ => mot_even_or_odd (S n_1))
+                                                  (\e_n_1 => Right $ add1_even_is_odd n_1 e_n_1)
+                                                  (\o_n_1 => Left  $ add1_odd_is_even n_1 o_n_1)
+
+even_or_odd : (n : Nat) -> Either (Even n) (Odd n)
+even_or_odd n = ind_Nat n
+                        mot_even_or_odd
+                        (Left zero_is_even)
+                        step_even_or_odd
+
+
