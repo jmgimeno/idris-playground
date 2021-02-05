@@ -494,7 +494,7 @@ ind_Either : (target : Either l r) ->
              (base_right : (x : r) -> mot (Right x)) ->
              mot target
 ind_Either (Left x)  _ base_left _          = base_left  x
-ind_Either (Right x) _ _         base_right = base_right x
+ind_Either (Right y) _ _         base_right = base_right y
 
 mot_even_or_odd : (k : Nat) -> Type
 mot_even_or_odd k = Either (Even k) (Odd k)
@@ -513,4 +513,106 @@ even_or_odd n = ind_Nat n
                         (Left zero_is_even)
                         step_even_or_odd
 
+-- Chapter 14
+
+Trivial : Type
+Trivial = Unit
+
+sole : Trivial
+sole = MkUnit
+
+Maybe' : Type -> Type
+Maybe' x = Either x Trivial
+
+nothing : (ty : Type) -> Maybe' ty
+nothing _ = Right sole
+
+just : (ty : Type) -> (x : ty) -> Maybe' ty
+just _ x = Left x
+
+maybe_head : (ty : Type) -> (es : List ty) -> Maybe' ty
+maybe_head ty es = rec_List es (nothing ty) (\hd, _, _ => just ty hd)
+
+maybe_tail : (ty : Type) -> (es : List ty) -> Maybe' (List ty)
+maybe_tail ty es = rec_List es (nothing (List ty)) (\_, tl, _ => just (List ty) tl)
+
+step_list_ref : (ty : Type) -> 
+                (n_1 : Nat) -> 
+                (list_ref_n_1 : List ty -> Maybe' ty) -> 
+                (es : List ty) -> 
+                Maybe' ty
+step_list_ref ty _ list_ref_n_1 es = ind_Either (maybe_tail ty es)
+                                                (\_ => Maybe' ty)
+                                                (\tl => list_ref_n_1 tl)
+                                                (\_ => nothing ty) 
+
+list_ref : (ty : Type) -> (n : Nat) -> (es : List ty) -> Maybe' ty
+list_ref ty n = rec_Nat n (maybe_head ty) (step_list_ref ty)
+
+frame_14_19 : Maybe' Atom
+frame_14_19 = list_ref Atom 0 ("ratatuille" :: "kartoffelmad" :: "hero" :: "prinsesstarta" :: Nil)
+
+menu : Vect 4 Atom
+menu = "ratatuille" :: "kartoffelmad" :: "hero" :: "prinsesstarta" :: Nil
+
+Absurd : Type
+Absurd = Void
+
+similarly_absurd : (x : Absurd) -> Absurd
+similarly_absurd x = x
+
+ind_Absurd : (target : Absurd) -> (mot : Type) -> mot
+ind_Absurd target mot = absurd target
+
+Fin' : (n : Nat) -> Type
+Fin' n = iter_Nat n Absurd Maybe'
+
+fzero : (n : Nat) -> Fin' (S n)
+fzero n = nothing $ Fin' n
+
+fadd1 : (n : Nat) -> (i_1 : Fin' n) -> Fin' (S n)
+fadd1 n i_1 = just (Fin' n) i_1
+
+base_vec_ref : (ty : Type) -> (no_value_ever : Fin' 0) -> (es : Vect 0 ty) -> ty
+base_vec_ref ty no_value_ever _ = ind_Absurd no_value_ever ty
+
+step_vec_ref : (ty : Type) -> 
+               (l_1 : Nat) -> 
+               (vec_ref_l_1 : Fin' l_1 -> Vect l_1 ty -> ty) -> 
+               (i : Fin' (S l_1)) -> 
+               (es : Vect (S l_1) ty) -> 
+               ty
+step_vec_ref ty l_1 vec_ref_l_1 i es = ind_Either i
+                                                  (\_ => ty)
+                                                  (\i_1 => vec_ref_l_1 i_1 (tail es))
+                                                  (\triv => head es)
+
+vec_ref : (ty : Type) -> (l : Nat) -> (Fin' l) -> (Vect l ty) -> ty
+vec_ref ty l = ind_Nat l 
+                       (\k => (Fin' k) -> (Vect k ty) -> ty)
+                       (base_vec_ref ty)
+                       (step_vec_ref ty)
+
+frame_14_74 : Atom
+frame_14_74 = ?frame_14_74_rhs
+
+Two : Type
+Two = Either Trivial Trivial
+
+Two_Fun : (n : Nat) -> Type
+Two_Fun n = iter_Nat n
+                     Two
+                     (\type => Two -> type)
+
+both_left : (a : Two) -> (b : Two) -> Two
+both_left a b = ind_Either a
+                           (\_ => Two)
+                           (\_ => b)
+                           (\_ => Right sole)
+
+step_taut : (n_1 : Nat) -> (taut_n_1 : Two_Fun n_1 -> Two) -> Two_Fun (S n_1) -> Two
+step_taut n_1 taut_n_1 f = both_left (taut_n_1 (f (Left sole))) (taut_n_1 (f (Right sole)))
+
+taut : (n : Nat) -> Two_Fun n -> Two
+taut n = ind_Nat n (\k => Two_Fun k -> Two) (\x => x) step_taut
 
