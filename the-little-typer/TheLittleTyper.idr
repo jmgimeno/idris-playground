@@ -642,7 +642,8 @@ zero_not_add1 : (n : Nat) -> (0 = S n) -> Absurd
 zero_not_add1 n = use_Nat_equal 0 (S n)
 
 donut_absurdity : (zero_equal_six : 0 = 6) -> "powered" = "glazed"
-donut_absurdity zero_equal_six = ?donut_absurdity_rhs
+donut_absurdity Refl impossible
+--donut_absurdity zero_equal_six = ?donut_absurdity_rhs
 
 sub1_equal : (n : Nat) -> (j : Nat) -> S n = S j -> n = j 
 sub1_equal n j = use_Nat_equal (S n) (S j)
@@ -679,4 +680,36 @@ Dec' : (ty : Type) -> Type
 Dec' ty = Either ty (ty -> Absurd)
 
 pem : (ty : Type) -> Dec' ty 
+
+-- Chapter 16
+
+zero_q : (j : Nat) -> Dec' (0 = j)
+zero_q j = ind_Nat j 
+                   (\k => Dec' (0 = k)) 
+                   (Left $ Refl {x = 0}) 
+                   (\j_1, zero_q_n_1 => Right $ zero_not_add1 j_1)
+
+mot_nat_equal_q : (k : Nat) -> Type
+mot_nat_equal_q k = (j : Nat) -> Dec' (k = j)
+
+add1_not_zero : (n : Nat) -> S n = 0 -> Absurd
+add1_not_zero n = use_Nat_equal (S n) 0
+
+dec_add1_equal : (n_1 : Nat) -> (j_1 : Nat) -> (eq_or_not : Dec' (n_1 = j_1)) -> Dec' (S n_1 = S j_1)
+dec_add1_equal n_1 j_1 eq_or_not = ind_Either eq_or_not
+                                              (\_ => Dec' (S n_1 = S j_1))
+                                              (\yes => Left $ cong (plus' 1) yes)
+                                              (\no => Right $ (\n_eq_j => no $ sub1_equal n_1 j_1 n_eq_j))
+
+step_nat_equal_q : (n_1 : Nat) -> 
+                   (nat_equal_q_n_1 : mot_nat_equal_q n_1) -> 
+                   mot_nat_equal_q (S n_1)
+step_nat_equal_q n_1 nat_equal_q_n_1 j = ind_Nat j
+                                                 (\k => Dec' (S n_1 = k))
+                                                 (Right $ add1_not_zero n_1)
+                                                 (\j_1, _ => dec_add1_equal n_1 j_1 (nat_equal_q_n_1 j_1))
+
+
+nat_equal_q : (n : Nat) -> (j : Nat) -> Dec' (n = j)
+nat_equal_q n j = (ind_Nat n mot_nat_equal_q zero_q step_nat_equal_q) j
 
