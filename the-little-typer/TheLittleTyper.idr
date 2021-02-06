@@ -616,3 +616,67 @@ step_taut n_1 taut_n_1 f = both_left (taut_n_1 (f (Left sole))) (taut_n_1 (f (Ri
 taut : (n : Nat) -> Two_Fun n -> Two
 taut n = ind_Nat n (\k => Two_Fun k -> Two) (\x => x) step_taut
 
+-- Chapter 15
+
+equal_consequence : (n : Nat) -> (j : Nat) -> Type
+equal_consequence n j = which_Nat n 
+                                  (which_Nat j 
+                                             Trivial 
+                                             (\j_1 => Absurd))
+                                  (\n_1 => which_Nat j 
+                                                     Absurd
+                                                     (\j_1 => n_1 = j_1))
+
+equal_consequence_same : (n : Nat) -> equal_consequence n n
+equal_consequence_same n = ind_Nat n 
+                                   (\k => equal_consequence k k) 
+                                   sole
+                                   (\n_1, equal_consequence_n_1 => Refl {x = n_1}) 
+
+use_Nat_equal : (n : Nat) -> (j : Nat) -> (equal_n_j : n = j) -> equal_consequence n j
+use_Nat_equal n j equal_n_j = replace {p = \k => equal_consequence n k} 
+                                      equal_n_j 
+                                      (equal_consequence_same n)
+
+zero_not_add1 : (n : Nat) -> (0 = S n) -> Absurd
+zero_not_add1 n = use_Nat_equal 0 (S n)
+
+donut_absurdity : (zero_equal_six : 0 = 6) -> "powered" = "glazed"
+donut_absurdity zero_equal_six = ?donut_absurdity_rhs
+
+sub1_equal : (n : Nat) -> (j : Nat) -> S n = S j -> n = j 
+sub1_equal n j = use_Nat_equal (S n) (S j)
+
+one_not_six : (one_equal_six : 1 = 6) -> Absurd
+one_not_six Refl impossible
+--one_not_six one_equal_six = zero_not_add1 4 (sub1_equal 0 5 one_equal_six)
+
+mot_front : (ty : Type) -> (k : Nat) -> (es : Vect k ty) -> Type
+mot_front ty k _ = (j : Nat) -> (k = S j) -> ty
+
+step_front : (ty : Type) -> 
+             (l : Nat) -> 
+             (e : ty) -> 
+             (es : Vect l ty) -> 
+             (front_es : mot_front ty l es) -> 
+             mot_front ty (S l) (e :: es)
+step_front ty l e es front_es j prf = e
+
+front : (ty : Type) -> (n : Nat) -> (es : Vect (S n) ty) -> ty
+front ty l es = (ind_Vec (S l) es 
+                         (mot_front ty) 
+                         (\j, eq => (ind_Absurd (zero_not_add1 j eq) ty)) 
+                         (step_front ty)) 
+                         l Refl
+
+frame_15_76 : Atom
+frame_15_76 = front Atom 2 ("sprinkles" :: "chocolate" :: "maple" :: Nil)
+
+pem_not_false : (ty : Type) -> (pem_false : Either ty (ty -> Absurd) -> Absurd) -> Absurd
+pem_not_false ty pem_false = pem_false (Right $ \x => pem_false $ Left x)
+
+Dec' : (ty : Type) -> Type
+Dec' ty = Either ty (ty -> Absurd)
+
+pem : (ty : Type) -> Dec' ty 
+
